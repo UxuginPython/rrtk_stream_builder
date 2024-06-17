@@ -15,6 +15,8 @@ fn build_ui(app: &Application) {
     let start_y = Rc::new(Cell::new(100.0));
     let draw_x = Rc::new(Cell::new(100.0));
     let draw_y = Rc::new(Cell::new(100.0));
+    let relative_x = Rc::new(Cell::new(0.0));
+    let relative_y = Rc::new(Cell::new(0.0));
     let drawing_area = Rc::new(DrawingArea::builder()
         .content_width(300)
         .content_height(300)
@@ -29,22 +31,24 @@ fn build_ui(app: &Application) {
     let click = GestureClick::new();
     drawing_area.add_controller(drag.clone());
     drawing_area.add_controller(click.clone());
-    drag.connect_drag_end(clone!(@strong drawing_area, @strong start_x, @strong start_y, @strong draw_x, @strong draw_y => move |_gesture: &GestureDrag, x: f64, y: f64| {
+    drag.connect_drag_end(clone!(@strong drawing_area, @strong start_x, @strong start_y, @strong draw_x, @strong draw_y, @strong relative_x, @strong relative_y => move |_gesture: &GestureDrag, x: f64, y: f64| {
         println!("end draw_x: {:?} draw_y: {:?}", start_x.get() + x, start_y.get() + y);
-        draw_x.set(start_x.get() + x);
-        draw_y.set(start_y.get() + y);
+        draw_x.set(start_x.get() + relative_x.get() + x);
+        draw_y.set(start_y.get() + relative_y.get() + y);
         drawing_area.queue_draw();
     }));
-    drag.connect_drag_update(clone!(@strong drawing_area, @strong start_x, @strong start_y, @strong draw_x, @strong draw_y => move |_gesture: &GestureDrag, x: f64, y: f64| {
+    drag.connect_drag_update(clone!(@strong drawing_area, @strong start_x, @strong start_y, @strong draw_x, @strong draw_y, @strong relative_x, @strong relative_y => move |_gesture: &GestureDrag, x: f64, y: f64| {
         println!("update draw_x: {:?} draw_y: {:?}", start_x.get() + x, start_y.get() + y);
-        draw_x.set(start_x.get() + x);
-        draw_y.set(start_y.get() + y);
+        draw_x.set(start_x.get() + relative_x.get() + x);
+        draw_y.set(start_y.get() + relative_y.get() + y);
         drawing_area.queue_draw();
     }));
-    click.connect_pressed(clone!(@strong drawing_area => move |_gesture: &GestureClick, _click_count: i32, click_x: f64, click_y: f64| {
+    click.connect_pressed(clone!(@strong drawing_area, @strong relative_x, @strong relative_y => move |_gesture: &GestureClick, _click_count: i32, click_x: f64, click_y: f64| {
         println!("start_x: {:?}, start_y: {:?}", click_x, click_y);
         start_x.set(click_x);
         start_y.set(click_y);
+        relative_x.set(draw_x.get() - click_x);
+        relative_y.set(draw_y.get() - click_y);
         drawing_area.queue_draw();
     }));
     let window = ApplicationWindow::builder()
