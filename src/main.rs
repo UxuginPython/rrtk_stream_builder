@@ -13,10 +13,10 @@ fn main() -> glib::ExitCode {
 fn build_ui(app: &Application) {
     let x = Rc::new(Cell::new(100.0));
     let y = Rc::new(Cell::new(100.0));
-    let drawing_area = DrawingArea::builder()
+    let drawing_area = Rc::new(DrawingArea::builder()
         .content_width(300)
         .content_height(300)
-        .build();
+        .build());
     drawing_area.set_draw_func(clone!(@strong x, @strong y => move |_drawing_area: &DrawingArea, context: &Context, _width: i32, _height: i32| {
         println!("drawing");
         context.set_source_rgb(0.0, 0.0, 0.0);
@@ -28,15 +28,15 @@ fn build_ui(app: &Application) {
     drawing_area.add_controller(drag.clone());
     drawing_area.add_controller(click.clone());
     drag.connect_drag_end(drag_end);
-    click.connect_pressed(move |_gesture: &GestureClick, _click_count: i32, click_x: f64, click_y: f64| {
+    click.connect_pressed(clone!(@strong drawing_area => move |_gesture: &GestureClick, _click_count: i32, click_x: f64, click_y: f64| {
         x.set(click_x);
         y.set(click_y);
         drawing_area.queue_draw();
-    });
+    }));
     let window = ApplicationWindow::builder()
         .application(app)
         .title("My GTK App")
-        .child(&drawing_area)
+        .child(drawing_area.as_ref())
         .build();
     window.present();
 }
