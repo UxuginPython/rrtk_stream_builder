@@ -68,8 +68,7 @@ fn build_ui(app: &Application) {
     drawing_area.add_controller(drag.clone());
     drawing_area.add_controller(click.clone());
     drag.connect_drag_end(clone!(@strong drawing_area, @strong things => move |_gesture: &GestureDrag, x: f64, y: f64| {
-        let mut export = None;
-        for (i, thing) in things.clone().borrow().clone().into_iter().enumerate() {
+        for thing in things.clone().borrow().clone() {
             if thing.borrow().dragging {
                 let draw_x = thing.borrow().start_x + thing.borrow().relative_x + x;
                 let draw_y = thing.borrow().start_y + thing.borrow().relative_y + y;
@@ -88,21 +87,12 @@ fn build_ui(app: &Application) {
                     thing.borrow_mut().draw_y = max_y;
                 }
                 drawing_area.queue_draw();
-                export = Some((i, thing));
                 break;
             }
-        }
-        match export {
-            Some((i, thing)) => {
-                things.borrow_mut().remove(i);
-                things.borrow_mut().push_front(thing);
-            }
-            None => {}
         }
     }));
     drag.connect_drag_update(clone!(@strong drawing_area, @strong things => move |_gesture: &GestureDrag, x: f64, y: f64| {
-        let mut export = None;
-        for (i, thing) in things.clone().borrow().clone().into_iter().enumerate() {
+        for thing in things.clone().borrow().clone() {
             if thing.borrow().dragging {
                 let draw_x = thing.borrow().start_x + thing.borrow().relative_x + x;
                 let draw_y = thing.borrow().start_y + thing.borrow().relative_y + y;
@@ -121,20 +111,13 @@ fn build_ui(app: &Application) {
                     thing.borrow_mut().draw_y = max_y;
                 }
                 drawing_area.queue_draw();
-                export = Some((i, thing));
                 break;
             }
         }
-        match export {
-            Some((i, thing)) => {
-                things.borrow_mut().remove(i);
-                things.borrow_mut().push_front(thing);
-            }
-            None => {}
-        }
     }));
     click.connect_pressed(clone!(@strong drawing_area, @strong things => move |_gesture: &GestureClick, _click_count: i32, click_x: f64, click_y: f64| {
-        for thing in things.clone().borrow().clone() {
+        let mut export = None;
+        for (i, thing) in things.clone().borrow().clone().into_iter().enumerate() {
             thing.borrow_mut().dragging = thing.borrow().draw_x <= click_x && click_x <= thing.borrow().draw_x + 100.0 && thing.borrow().draw_y <= click_y && click_y <= thing.borrow().draw_y + 100.0;
             if thing.borrow().dragging {
                 thing.borrow_mut().start_x = click_x;
@@ -144,7 +127,16 @@ fn build_ui(app: &Application) {
                 thing.borrow_mut().relative_x = relative_x;
                 thing.borrow_mut().relative_y = relative_y;
                 drawing_area.queue_draw();
+                export = Some((i, thing));
+                break;
             }
+        }
+        match export {
+            Some((i, thing)) => {
+                things.borrow_mut().remove(i);
+                things.borrow_mut().push_front(thing);
+            }
+            None => {}
         }
     }));
     let window = ApplicationWindow::builder()
