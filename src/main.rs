@@ -47,8 +47,9 @@ fn main() -> glib::ExitCode {
 }
 fn build_ui(app: &Application) {
     let things = Rc::new(RefCell::new(VecDeque::from([
-        Rc::new(RefCell::new(Thing::new(1.0, 0.0, 0.0, 100.0, 100.0, 200.0, 100.0))),
-        Rc::new(RefCell::new(Thing::new(0.0, 0.0, 1.0, 100.0, 100.0, 000.0, 100.0))),
+        Rc::new(RefCell::new(Thing::new(1.0, 0.0, 0.0, 100.0, 100.0, 0.0, 100.0))),
+        Rc::new(RefCell::new(Thing::new(0.0, 1.0, 0.0, 100.0, 100.0, 100.0, 100.0))),
+        Rc::new(RefCell::new(Thing::new(0.0, 0.0, 1.0, 100.0, 100.0, 200.0, 100.0))),
     ])));
     let drawing_area = Rc::new(DrawingArea::builder()
         .content_width(AREA_WIDTH)
