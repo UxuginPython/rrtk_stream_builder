@@ -54,7 +54,9 @@ fn build_ui(app: &Application) {
         .content_height(AREA_HEIGHT)
         .build());
     drawing_area.set_draw_func(clone!(@strong drawing_area, @strong things => move |_drawing_area: &DrawingArea, context: &Context, _width: i32, _height: i32| {
-        for thing in &things {
+        let mut my_things = things.clone();
+        my_things.reverse();
+        for thing in &my_things {
             context.set_source_rgb(thing.borrow().red, thing.borrow().green, thing.borrow().blue);
             context.rectangle(thing.borrow().draw_x, thing.borrow().draw_y, thing.borrow().width, thing.borrow().height);
             context.fill().unwrap();
@@ -84,6 +86,7 @@ fn build_ui(app: &Application) {
                     thing.borrow_mut().draw_y = max_y;
                 }
                 drawing_area.queue_draw();
+                break;
             }
         }
     }));
@@ -107,6 +110,7 @@ fn build_ui(app: &Application) {
                     thing.borrow_mut().draw_y = max_y;
                 }
                 drawing_area.queue_draw();
+                break;
             }
         }
     }));
