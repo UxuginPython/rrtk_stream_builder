@@ -29,8 +29,14 @@ fn build_ui(app: &Application) {
     let click = GestureClick::new();
     drawing_area.add_controller(drag.clone());
     drawing_area.add_controller(click.clone());
-    drag.connect_drag_end(clone!(@strong drawing_area, @strong start_x, @strong start_y => move |_gesture: &GestureDrag, x: f64, y: f64| {
-        println!("draw_x: {:?} draw_Y: {:?}", start_x.get() + x, start_y.get() + y);
+    drag.connect_drag_end(clone!(@strong drawing_area, @strong start_x, @strong start_y, @strong draw_x, @strong draw_y => move |_gesture: &GestureDrag, x: f64, y: f64| {
+        println!("end draw_x: {:?} draw_y: {:?}", start_x.get() + x, start_y.get() + y);
+        draw_x.set(start_x.get() + x);
+        draw_y.set(start_y.get() + y);
+        drawing_area.queue_draw();
+    }));
+    drag.connect_drag_update(clone!(@strong drawing_area, @strong start_x, @strong start_y, @strong draw_x, @strong draw_y => move |_gesture: &GestureDrag, x: f64, y: f64| {
+        println!("update draw_x: {:?} draw_y: {:?}", start_x.get() + x, start_y.get() + y);
         draw_x.set(start_x.get() + x);
         draw_y.set(start_y.get() + y);
         drawing_area.queue_draw();
