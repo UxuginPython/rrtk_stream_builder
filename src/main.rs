@@ -1,5 +1,5 @@
 use gtk4::prelude::*;
-use gtk4::{cairo, glib, Application, ApplicationWindow, DrawingArea};
+use gtk4::{cairo, glib, Application, ApplicationWindow, DrawingArea, GestureDrag, Widget};
 use cairo::Context;
 const APP_ID: &str = "com.uxugin.gtk-cairo-test";
 fn main() -> glib::ExitCode {
@@ -13,6 +13,9 @@ fn build_ui(app: &Application) {
         .content_height(300)
         .build();
     drawing_area.set_draw_func(draw_func);
+    let drag = GestureDrag::new();
+    drawing_area.add_controller(drag.clone());
+    drag.connect_drag_end(drag_end);
     let window = ApplicationWindow::builder()
         .application(app)
         .title("My GTK App")
@@ -24,4 +27,7 @@ fn draw_func(_drawing_area: &DrawingArea, context: &Context, _width: i32, _heigh
     context.set_source_rgb(0.0, 0.0, 0.0);
     context.rectangle(100.0, 100.0, 100.0, 100.0);
     context.fill().unwrap();
+}
+fn drag_end(gesture: &GestureDrag, x: f64, y: f64) {
+    println!("{} {}", x, y);
 }
