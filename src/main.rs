@@ -1,5 +1,5 @@
 use gtk4::prelude::*;
-use gtk4::{glib, Application, ApplicationWindow, Button};
+use gtk4::{glib, Application, ApplicationWindow, DrawingArea};
 const APP_ID: &str = "com.uxugin.gtk-cairo-test";
 fn main() -> glib::ExitCode {
     let app = Application::builder().application_id(APP_ID).build();
@@ -7,16 +7,14 @@ fn main() -> glib::ExitCode {
     app.run()
 }
 fn build_ui(app: &Application) {
-    let button = Button::builder()
-        .label("Press me!")
+    let drawing_area = DrawingArea::builder()
+        .content_width(256*3)
+        .content_height(256*2)
         .build();
-    button.connect_clicked(|button| {
-        button.set_label("Hello World!");
-    });
     let window = ApplicationWindow::builder()
         .application(app)
         .title("My GTK App")
-        .child(&button)
+        .child(&drawing_area)
         .build();
     window.present();
 }
