@@ -45,72 +45,83 @@ fn main() -> glib::ExitCode {
     app.run()
 }
 fn build_ui(app: &Application) {
-    let thing = Rc::new(RefCell::new(Thing::new(0.0, 0.0, 0.0, 100.0, 100.0, 100.0, 100.0)));
+    let things = [
+        Rc::new(RefCell::new(Thing::new(1.0, 0.0, 0.0, 100.0, 100.0, 200.0, 100.0))),
+        Rc::new(RefCell::new(Thing::new(0.0, 0.0, 1.0, 100.0, 100.0, 000.0, 100.0))),
+    ];
     let drawing_area = Rc::new(DrawingArea::builder()
         .content_width(AREA_WIDTH)
         .content_height(AREA_HEIGHT)
         .build());
-    drawing_area.set_draw_func(clone!(@strong drawing_area, @strong thing => move |_drawing_area: &DrawingArea, context: &Context, _width: i32, _height: i32| {
-        context.set_source_rgb(thing.borrow().red, thing.borrow().green, thing.borrow().blue);
-        context.rectangle(thing.borrow().draw_x, thing.borrow().draw_y, thing.borrow().width, thing.borrow().height);
-        context.fill().unwrap();
+    drawing_area.set_draw_func(clone!(@strong drawing_area, @strong things => move |_drawing_area: &DrawingArea, context: &Context, _width: i32, _height: i32| {
+        for thing in &things {
+            context.set_source_rgb(thing.borrow().red, thing.borrow().green, thing.borrow().blue);
+            context.rectangle(thing.borrow().draw_x, thing.borrow().draw_y, thing.borrow().width, thing.borrow().height);
+            context.fill().unwrap();
+        }
     }));
     let drag = GestureDrag::new();
     let click = GestureClick::new();
     drawing_area.add_controller(drag.clone());
     drawing_area.add_controller(click.clone());
-    drag.connect_drag_end(clone!(@strong drawing_area, @strong thing => move |_gesture: &GestureDrag, x: f64, y: f64| {
-        if thing.borrow().dragging {
-            let draw_x = thing.borrow().start_x + thing.borrow().relative_x + x;
-            let draw_y = thing.borrow().start_y + thing.borrow().relative_y + y;
-            thing.borrow_mut().draw_x = draw_x;
-            thing.borrow_mut().draw_y = draw_y;
-            let max_x = AREA_WIDTH as f64 - thing.borrow().width;
-            let max_y = AREA_HEIGHT as f64 - thing.borrow().height;
-            if thing.borrow().draw_x < 0.0 {
-                thing.borrow_mut().draw_x = 0.0;
-            } else if thing.borrow().draw_x > max_x {
-                thing.borrow_mut().draw_x = max_x;
+    drag.connect_drag_end(clone!(@strong drawing_area, @strong things => move |_gesture: &GestureDrag, x: f64, y: f64| {
+        for thing in &things {
+            if thing.borrow().dragging {
+                let draw_x = thing.borrow().start_x + thing.borrow().relative_x + x;
+                let draw_y = thing.borrow().start_y + thing.borrow().relative_y + y;
+                thing.borrow_mut().draw_x = draw_x;
+                thing.borrow_mut().draw_y = draw_y;
+                let max_x = AREA_WIDTH as f64 - thing.borrow().width;
+                let max_y = AREA_HEIGHT as f64 - thing.borrow().height;
+                if thing.borrow().draw_x < 0.0 {
+                    thing.borrow_mut().draw_x = 0.0;
+                } else if thing.borrow().draw_x > max_x {
+                    thing.borrow_mut().draw_x = max_x;
+                }
+                if thing.borrow().draw_y < 0.0 {
+                    thing.borrow_mut().draw_y = 0.0;
+                } else if thing.borrow().draw_y > max_y {
+                    thing.borrow_mut().draw_y = max_y;
+                }
+                drawing_area.queue_draw();
             }
-            if thing.borrow().draw_y < 0.0 {
-                thing.borrow_mut().draw_y = 0.0;
-            } else if thing.borrow().draw_y > max_y {
-                thing.borrow_mut().draw_y = max_y;
-            }
-            drawing_area.queue_draw();
         }
     }));
-    drag.connect_drag_update(clone!(@strong drawing_area, @strong thing => move |_gesture: &GestureDrag, x: f64, y: f64| {
-        if thing.borrow().dragging {
-            let draw_x = thing.borrow().start_x + thing.borrow().relative_x + x;
-            let draw_y = thing.borrow().start_y + thing.borrow().relative_y + y;
-            thing.borrow_mut().draw_x = draw_x;
-            thing.borrow_mut().draw_y = draw_y;
-            let max_x = AREA_WIDTH as f64 - thing.borrow().width;
-            let max_y = AREA_HEIGHT as f64 - thing.borrow().height;
-            if thing.borrow().draw_x < 0.0 {
-                thing.borrow_mut().draw_x = 0.0;
-            } else if thing.borrow().draw_x > max_x {
-                thing.borrow_mut().draw_x = max_x;
+    drag.connect_drag_update(clone!(@strong drawing_area, @strong things => move |_gesture: &GestureDrag, x: f64, y: f64| {
+        for thing in &things {
+            if thing.borrow().dragging {
+                let draw_x = thing.borrow().start_x + thing.borrow().relative_x + x;
+                let draw_y = thing.borrow().start_y + thing.borrow().relative_y + y;
+                thing.borrow_mut().draw_x = draw_x;
+                thing.borrow_mut().draw_y = draw_y;
+                let max_x = AREA_WIDTH as f64 - thing.borrow().width;
+                let max_y = AREA_HEIGHT as f64 - thing.borrow().height;
+                if thing.borrow().draw_x < 0.0 {
+                    thing.borrow_mut().draw_x = 0.0;
+                } else if thing.borrow().draw_x > max_x {
+                    thing.borrow_mut().draw_x = max_x;
+                }
+                if thing.borrow().draw_y < 0.0 {
+                    thing.borrow_mut().draw_y = 0.0;
+                } else if thing.borrow().draw_y > max_y {
+                    thing.borrow_mut().draw_y = max_y;
+                }
+                drawing_area.queue_draw();
             }
-            if thing.borrow().draw_y < 0.0 {
-                thing.borrow_mut().draw_y = 0.0;
-            } else if thing.borrow().draw_y > max_y {
-                thing.borrow_mut().draw_y = max_y;
-            }
-            drawing_area.queue_draw();
         }
     }));
-    click.connect_pressed(clone!(@strong drawing_area, @strong thing => move |_gesture: &GestureClick, _click_count: i32, click_x: f64, click_y: f64| {
-        thing.borrow_mut().dragging = thing.borrow().draw_x <= click_x && click_x <= thing.borrow().draw_x + 100.0 && thing.borrow().draw_y <= click_y && click_y <= thing.borrow().draw_y + 100.0;
-        if thing.borrow().dragging {
-            thing.borrow_mut().start_x = click_x;
-            thing.borrow_mut().start_y = click_y;
-            let relative_x = thing.borrow().draw_x - click_x;
-            let relative_y = thing.borrow().draw_y - click_y;
-            thing.borrow_mut().relative_x = relative_x;
-            thing.borrow_mut().relative_y = relative_y;
-            drawing_area.queue_draw();
+    click.connect_pressed(clone!(@strong drawing_area, @strong things => move |_gesture: &GestureClick, _click_count: i32, click_x: f64, click_y: f64| {
+        for thing in &things {
+            thing.borrow_mut().dragging = thing.borrow().draw_x <= click_x && click_x <= thing.borrow().draw_x + 100.0 && thing.borrow().draw_y <= click_y && click_y <= thing.borrow().draw_y + 100.0;
+            if thing.borrow().dragging {
+                thing.borrow_mut().start_x = click_x;
+                thing.borrow_mut().start_y = click_y;
+                let relative_x = thing.borrow().draw_x - click_x;
+                let relative_y = thing.borrow().draw_y - click_y;
+                thing.borrow_mut().relative_x = relative_x;
+                thing.borrow_mut().relative_y = relative_y;
+                drawing_area.queue_draw();
+            }
         }
     }));
     let window = ApplicationWindow::builder()
