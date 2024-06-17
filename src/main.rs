@@ -23,7 +23,6 @@ fn build_ui(app: &Application) {
         .content_height(300)
         .build());
     drawing_area.set_draw_func(clone!(@strong draw_x, @strong draw_y => move |_drawing_area: &DrawingArea, context: &Context, _width: i32, _height: i32| {
-        println!("drawing");
         context.set_source_rgb(0.0, 0.0, 0.0);
         context.rectangle(draw_x.get(), draw_y.get(), 100.0, 100.0);
         context.fill().unwrap();
@@ -34,24 +33,41 @@ fn build_ui(app: &Application) {
     drawing_area.add_controller(click.clone());
     drag.connect_drag_end(clone!(@strong drawing_area, @strong start_x, @strong start_y, @strong draw_x, @strong draw_y, @strong relative_x, @strong relative_y, @strong dragging => move |_gesture: &GestureDrag, x: f64, y: f64| {
         if dragging.get() {
-            println!("end draw_x: {:?} draw_y: {:?}", start_x.get() + x, start_y.get() + y);
             draw_x.set(start_x.get() + relative_x.get() + x);
             draw_y.set(start_y.get() + relative_y.get() + y);
+            if draw_x.get() < 0.0 {
+                draw_x.set(0.0);
+            } else if draw_x.get() > 200.0 {
+                draw_x.set(200.0);
+            }
+            if draw_y.get() < 0.0 {
+                draw_y.set(0.0);
+            } else if draw_y.get() > 200.0 {
+                draw_y.set(200.0);
+            }
             drawing_area.queue_draw();
         }
     }));
     drag.connect_drag_update(clone!(@strong drawing_area, @strong start_x, @strong start_y, @strong draw_x, @strong draw_y, @strong relative_x, @strong relative_y, @strong dragging => move |_gesture: &GestureDrag, x: f64, y: f64| {
         if dragging.get() {
-            println!("update draw_x: {:?} draw_y: {:?}", start_x.get() + x, start_y.get() + y);
             draw_x.set(start_x.get() + relative_x.get() + x);
             draw_y.set(start_y.get() + relative_y.get() + y);
+            if draw_x.get() < 0.0 {
+                draw_x.set(0.0);
+            } else if draw_x.get() > 200.0 {
+                draw_x.set(200.0);
+            }
+            if draw_y.get() < 0.0 {
+                draw_y.set(0.0);
+            } else if draw_y.get() > 200.0 {
+                draw_y.set(200.0);
+            }
             drawing_area.queue_draw();
         }
     }));
     click.connect_pressed(clone!(@strong drawing_area, @strong relative_x, @strong relative_y, @strong dragging => move |_gesture: &GestureClick, _click_count: i32, click_x: f64, click_y: f64| {
         dragging.set(draw_x.get() <= click_x && click_x <= draw_x.get() + 100.0 && draw_y.get() <= click_y && click_y <= draw_y.get() + 100.0);
         if dragging.get() {
-            println!("start_x: {:?}, start_y: {:?}", click_x, click_y);
             start_x.set(click_x);
             start_y.set(click_y);
             relative_x.set(draw_x.get() - click_x);
