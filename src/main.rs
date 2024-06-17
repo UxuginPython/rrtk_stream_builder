@@ -23,11 +23,10 @@ fn build_ui(app: &Application) {
 fn draw_func(_drawing_area: &DrawingArea, context: &Context, _width: i32, _height: i32) {
     context.set_source_rgb(1.0, 1.0, 1.0);
     context.paint().unwrap();
+    context.set_source_rgb(0.5, 0.5, 0.5);
+    context.rectangle(100.0, 100.0, 100.0, 100.0);
+    context.fill().unwrap();
     context.set_source_rgb(0.0, 0.0, 0.0);
-    context.line_to(100.0, 100.0);
-    context.line_to(200.0, 100.0);
-    context.line_to(200.0, 200.0);
-    context.line_to(100.0, 200.0);
-    context.line_to(100.0, 100.0);
+    context.rectangle(100.0, 100.0, 100.0, 100.0);
     context.stroke().unwrap();
 }
