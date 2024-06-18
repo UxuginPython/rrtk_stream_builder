@@ -7,29 +7,20 @@ use glib::clone;
 use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::rc::Rc;
+#[derive(Clone)]
 struct DragInfo {
-    pub width: f64,
-    pub height: f64,
     pub start_x: f64,
     pub start_y: f64,
-    pub draw_x: f64,
-    pub draw_y: f64,
     pub relative_x: f64,
     pub relative_y: f64,
-    pub dragging: bool,
 }
 impl DragInfo {
-    fn new(width: f64, height: f64, x: f64, y: f64) -> DragInfo {
+    fn new(x: f64, y: f64) -> DragInfo {
         DragInfo {
-            width: width,
-            height: height,
             start_x: x,
             start_y: y,
-            draw_x: x,
-            draw_y: y,
             relative_x: 0.0,
             relative_y: 0.0,
-            dragging: false,
         }
     }
 }
@@ -37,7 +28,11 @@ struct Thing {
     pub red: f64,
     pub green: f64,
     pub blue: f64,
-    pub drag_info: DragInfo,
+    pub width: f64,
+    pub height: f64,
+    pub x: f64,
+    pub y: f64,
+    pub dragging: bool,
 }
 impl Thing {
     fn new(red: f64, green: f64, blue: f64, width: f64, height: f64, x: f64, y: f64) -> Thing {
@@ -45,7 +40,11 @@ impl Thing {
             red: red,
             green: green,
             blue: blue,
-            drag_info: DragInfo::new(width, height, x, y),
+            width: width,
+            height: height,
+            x: x,
+            y: y,
+            dragging: false,
         }
     }
 }
@@ -56,6 +55,7 @@ fn main() -> glib::ExitCode {
     app.run()
 }
 fn build_ui(app: &Application) {
+    let mut drag_info = Rc::new(RefCell::new(DragInfo::new(0.0, 0.0)));
     let things = Rc::new(RefCell::new(VecDeque::from([
         Rc::new(RefCell::new(Thing::new(1.0, 0.0, 0.0, 100.0, 100.0, 0.0, 100.0))),
         Rc::new(RefCell::new(Thing::new(0.0, 1.0, 0.0, 100.0, 100.0, 100.0, 100.0))),
@@ -65,7 +65,7 @@ fn build_ui(app: &Application) {
         .content_width(AREA_WIDTH)
         .content_height(AREA_HEIGHT)
         .build());
-    drawing_area.set_draw_func(clone!(@strong drawing_area, @strong things => move |_drawing_area: &DrawingArea, context: &Context, _width: i32, _height: i32| {
+    drawing_area.set_draw_func(clone!(@strong drawing_area, @strong things, @strong drag_info => move |_drawing_area: &DrawingArea, context: &Context, _width: i32, _height: i32| {
         context.select_font_face("Sans", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
         context.set_font_size(24.0);
         context.set_source_rgb(0.0, 0.0, 0.0);
@@ -76,7 +76,7 @@ fn build_ui(app: &Application) {
         my_things.reverse();
         for thing in my_things {
             context.set_source_rgb(thing.borrow().red, thing.borrow().green, thing.borrow().blue);
-            context.rectangle(thing.borrow().drag_info.draw_x, thing.borrow().drag_info.draw_y, thing.borrow().drag_info.width, thing.borrow().drag_info.height);
+            context.rectangle(thing.borrow().x, thing.borrow().y, thing.borrow().width, thing.borrow().height);
             context.fill().unwrap();
         }
     }));
@@ -84,65 +84,65 @@ fn build_ui(app: &Application) {
     let click = GestureClick::new();
     drawing_area.add_controller(drag.clone());
     drawing_area.add_controller(click.clone());
-    drag.connect_drag_end(clone!(@strong drawing_area, @strong things => move |_gesture: &GestureDrag, x: f64, y: f64| {
+    drag.connect_drag_end(clone!(@strong drawing_area, @strong things, @strong drag_info => move |_gesture: &GestureDrag, x: f64, y: f64| {
         for thing in things.clone().borrow().clone() {
-            if thing.borrow().drag_info.dragging {
-                let draw_x = thing.borrow().drag_info.start_x + thing.borrow().drag_info.relative_x + x;
-                let draw_y = thing.borrow().drag_info.start_y + thing.borrow().drag_info.relative_y + y;
-                thing.borrow_mut().drag_info.draw_x = draw_x;
-                thing.borrow_mut().drag_info.draw_y = draw_y;
-                let max_x = AREA_WIDTH as f64 - thing.borrow().drag_info.width;
-                let max_y = AREA_HEIGHT as f64 - thing.borrow().drag_info.height;
-                if thing.borrow().drag_info.draw_x < 0.0 {
-                    thing.borrow_mut().drag_info.draw_x = 0.0;
-                } else if thing.borrow().drag_info.draw_x > max_x {
-                    thing.borrow_mut().drag_info.draw_x = max_x;
+            if thing.borrow().dragging {
+                let draw_x = drag_info.borrow().start_x + drag_info.borrow().relative_x + x;
+                let draw_y = drag_info.borrow().start_y + drag_info.borrow().relative_y + y;
+                thing.borrow_mut().x = draw_x;
+                thing.borrow_mut().y = draw_y;
+                let max_x = AREA_WIDTH as f64 - thing.borrow().width;
+                let max_y = AREA_HEIGHT as f64 - thing.borrow().height;
+                if thing.borrow().x < 0.0 {
+                    thing.borrow_mut().x = 0.0;
+                } else if thing.borrow().x > max_x {
+                    thing.borrow_mut().x = max_x;
                 }
-                if thing.borrow().drag_info.draw_y < 0.0 {
-                    thing.borrow_mut().drag_info.draw_y = 0.0;
-                } else if thing.borrow().drag_info.draw_y > max_y {
-                    thing.borrow_mut().drag_info.draw_y = max_y;
+                if thing.borrow().y < 0.0 {
+                    thing.borrow_mut().y = 0.0;
+                } else if thing.borrow().y > max_y {
+                    thing.borrow_mut().y = max_y;
                 }
                 drawing_area.queue_draw();
                 break;
             }
         }
     }));
-    drag.connect_drag_update(clone!(@strong drawing_area, @strong things => move |_gesture: &GestureDrag, x: f64, y: f64| {
+    drag.connect_drag_update(clone!(@strong drawing_area, @strong things, @strong drag_info => move |_gesture: &GestureDrag, x: f64, y: f64| {
         for thing in things.clone().borrow().clone() {
-            if thing.borrow().drag_info.dragging {
-                let draw_x = thing.borrow().drag_info.start_x + thing.borrow().drag_info.relative_x + x;
-                let draw_y = thing.borrow().drag_info.start_y + thing.borrow().drag_info.relative_y + y;
-                thing.borrow_mut().drag_info.draw_x = draw_x;
-                thing.borrow_mut().drag_info.draw_y = draw_y;
-                let max_x = AREA_WIDTH as f64 - thing.borrow().drag_info.width;
-                let max_y = AREA_HEIGHT as f64 - thing.borrow().drag_info.height;
-                if thing.borrow().drag_info.draw_x < 0.0 {
-                    thing.borrow_mut().drag_info.draw_x = 0.0;
-                } else if thing.borrow().drag_info.draw_x > max_x {
-                    thing.borrow_mut().drag_info.draw_x = max_x;
+            if thing.borrow().dragging {
+                let draw_x = drag_info.borrow().start_x + drag_info.borrow().relative_x + x;
+                let draw_y = drag_info.borrow().start_y + drag_info.borrow().relative_y + y;
+                thing.borrow_mut().x = draw_x;
+                thing.borrow_mut().y = draw_y;
+                let max_x = AREA_WIDTH as f64 - thing.borrow().width;
+                let max_y = AREA_HEIGHT as f64 - thing.borrow().height;
+                if thing.borrow().x < 0.0 {
+                    thing.borrow_mut().x = 0.0;
+                } else if thing.borrow().x > max_x {
+                    thing.borrow_mut().x = max_x;
                 }
-                if thing.borrow().drag_info.draw_y < 0.0 {
-                    thing.borrow_mut().drag_info.draw_y = 0.0;
-                } else if thing.borrow().drag_info.draw_y > max_y {
-                    thing.borrow_mut().drag_info.draw_y = max_y;
+                if thing.borrow().y < 0.0 {
+                    thing.borrow_mut().y = 0.0;
+                } else if thing.borrow().y > max_y {
+                    thing.borrow_mut().y = max_y;
                 }
                 drawing_area.queue_draw();
                 break;
             }
         }
     }));
-    click.connect_pressed(clone!(@strong drawing_area, @strong things => move |_gesture: &GestureClick, _click_count: i32, click_x: f64, click_y: f64| {
+    click.connect_pressed(clone!(@strong drawing_area, @strong things, @strong drag_info => move |_gesture: &GestureClick, _click_count: i32, click_x: f64, click_y: f64| {
         let mut export = None;
         for (i, thing) in things.clone().borrow().clone().into_iter().enumerate() {
-            thing.borrow_mut().drag_info.dragging = thing.borrow().drag_info.draw_x <= click_x && click_x <= thing.borrow().drag_info.draw_x + 100.0 && thing.borrow().drag_info.draw_y <= click_y && click_y <= thing.borrow().drag_info.draw_y + 100.0;
-            if thing.borrow().drag_info.dragging {
-                thing.borrow_mut().drag_info.start_x = click_x;
-                thing.borrow_mut().drag_info.start_y = click_y;
-                let relative_x = thing.borrow().drag_info.draw_x - click_x;
-                let relative_y = thing.borrow().drag_info.draw_y - click_y;
-                thing.borrow_mut().drag_info.relative_x = relative_x;
-                thing.borrow_mut().drag_info.relative_y = relative_y;
+            thing.borrow_mut().dragging = thing.borrow().x <= click_x && click_x <= thing.borrow().x + thing.borrow().width && thing.borrow().y <= click_y && click_y <= thing.borrow().y + 100.0;
+            if thing.borrow().dragging {
+                drag_info.borrow_mut().start_x = click_x;
+                drag_info.borrow_mut().start_y = click_y;
+                let relative_x = thing.borrow().x - click_x;
+                let relative_y = thing.borrow().y - click_y;
+                drag_info.borrow_mut().relative_x = relative_x;
+                drag_info.borrow_mut().relative_y = relative_y;
                 drawing_area.queue_draw();
                 export = Some((i, thing));
                 break;
