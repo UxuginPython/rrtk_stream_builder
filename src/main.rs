@@ -176,18 +176,21 @@ fn build_ui(app: &Application) {
     drag.connect_drag_update(dragging_func.clone());
     drag.connect_drag_begin(clone!(@strong drawing_area, @strong things, @strong drag_info => move |_gesture: &GestureDrag, click_x: f64, click_y: f64| {
         let mut export = None;
-        //don't know why match doesn't work here
         for (i, thing) in things.clone().borrow().clone().into_iter().enumerate() {
-            if thing.borrow_mut().clicked(click_x, click_y) == Clicked::Body {
-                drag_info.borrow_mut().start_x = click_x;
-                drag_info.borrow_mut().start_y = click_y;
-                let relative_x = thing.borrow().x - click_x;
-                let relative_y = thing.borrow().y - click_y;
-                drag_info.borrow_mut().relative_x = relative_x;
-                drag_info.borrow_mut().relative_y = relative_y;
-                drawing_area.queue_draw();
-                export = Some((i, thing));
-                break;
+            let clicked = thing.borrow_mut().clicked(click_x, click_y);
+            match clicked {
+                Clicked::Body => {
+                    drag_info.borrow_mut().start_x = click_x;
+                    drag_info.borrow_mut().start_y = click_y;
+                    let relative_x = thing.borrow().x - click_x;
+                    let relative_y = thing.borrow().y - click_y;
+                    drag_info.borrow_mut().relative_x = relative_x;
+                    drag_info.borrow_mut().relative_y = relative_y;
+                    drawing_area.queue_draw();
+                    export = Some((i, thing));
+                    break;
+                }
+                _ => {}
             }
         }
         match export {
