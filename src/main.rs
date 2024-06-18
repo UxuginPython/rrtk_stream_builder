@@ -24,45 +24,12 @@ impl DragInfo {
         }
     }
 }
-struct Thing {
-    pub red: f64,
-    pub green: f64,
-    pub blue: f64,
-    pub width: f64,
-    pub height: f64,
-    pub x: f64,
-    pub y: f64,
-    pub dragging: bool,
-}
-impl Thing {
-    fn new(red: f64, green: f64, blue: f64, width: f64, height: f64, x: f64, y: f64) -> Thing {
-        Thing {
-            red: red,
-            green: green,
-            blue: blue,
-            width: width,
-            height: height,
-            x: x,
-            y: y,
-            dragging: false,
-        }
-    }
-    fn detect_drag(&mut self, click_x: f64, click_y: f64) -> bool {
-        self.dragging = self.x <= click_x
-            && click_x <= self.x + self.width
-            && self.y <= click_y
-            && click_y <= self.y + self.height
-            && !(click_x <= self.x + 20.0 && click_y <= self.y + 20.0);
-        self.dragging
-    }
-    fn draw(&self, context: &Context) -> Result<(), cairo::Error> {
-        context.set_source_rgb(self.red, self.green, self.blue);
-        context.rectangle(self.x, self.y, self.width, self.height);
-        context.fill()?;
-        context.set_source_rgb(0.0, 0.0, 0.0);
-        context.rectangle(self.x, self.y, 20.0, 20.0);
-        context.fill()
-    }
+#[derive(PartialEq)]
+enum Clicked {
+    Nothing,
+    Body,
+    Left(u8),
+    Right(u8),
 }
 struct Node {
     pub width: f64,
@@ -93,7 +60,7 @@ impl Node {
             text: text,
         }
     }
-    fn detect_drag(&mut self, click_x: f64, click_y: f64) -> bool {
+    fn clicked(&mut self, click_x: f64, click_y: f64) -> Clicked {
         self.dragging = self.x <= click_x
             && click_x <= self.x + self.width
             && self.y <= click_y
@@ -105,6 +72,7 @@ impl Node {
                 && click_y <= self.y + 20.0 * (i as f64) + 20.0
             {
                 self.dragging = false;
+                return Clicked::Left(i);
             }
         }
         for i in 0..self.right_nodes {
@@ -114,9 +82,14 @@ impl Node {
                 && click_y <= self.y + 20.0 * (i as f64) + 20.0
             {
                 self.dragging = false;
+                return Clicked::Right(i);
             }
         }
-        self.dragging
+        if self.dragging {
+            return Clicked::Body;
+        } else {
+            return Clicked::Nothing;
+        }
     }
     fn draw(&self, context: &Context) -> Result<(), cairo::Error> {
         context.set_source_rgb(0.5, 0.5, 0.5);
@@ -126,7 +99,7 @@ impl Node {
         context.select_font_face("Sans", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
         context.set_font_size(12.0);
         let extents = context.text_extents(self.text).unwrap();
-        context.move_to(self.x + 30.0, self.y + self.height / 2.0 + extents.height() / 2.0);
+        context.move_to(self.x + self.width / 2.0 - extents.width() / 2.0, self.y + self.height / 2.0 + extents.height() / 2.0);
         context.show_text(self.text)?;
         for i in 0..self.left_nodes {
             context.rectangle(self.x + 10.0, self.y + 20.0 * (i as f64) + 10.0, 10.0, 10.0);
@@ -203,8 +176,9 @@ fn build_ui(app: &Application) {
     drag.connect_drag_update(dragging_func.clone());
     drag.connect_drag_begin(clone!(@strong drawing_area, @strong things, @strong drag_info => move |_gesture: &GestureDrag, click_x: f64, click_y: f64| {
         let mut export = None;
+        //don't know why match doesn't work here
         for (i, thing) in things.clone().borrow().clone().into_iter().enumerate() {
-            if thing.borrow_mut().detect_drag(click_x, click_y) {
+            if thing.borrow_mut().clicked(click_x, click_y) == Clicked::Body {
                 drag_info.borrow_mut().start_x = click_x;
                 drag_info.borrow_mut().start_y = click_y;
                 let relative_x = thing.borrow().x - click_x;
