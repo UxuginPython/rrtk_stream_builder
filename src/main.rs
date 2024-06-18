@@ -51,6 +51,11 @@ impl Thing {
         self.dragging = self.x <= click_x && click_x <= self.x + self.width && self.y <= click_y && click_y <= self.y + self.height;
         self.dragging
     }
+    fn draw(&self, context: &Context) -> Result<(), cairo::Error> {
+        context.set_source_rgb(self.red, self.green, self.blue);
+        context.rectangle(self.x, self.y, self.width, self.height);
+        context.fill()
+    }
 }
 const APP_ID: &str = "com.uxugin.gtk-cairo-test";
 fn main() -> glib::ExitCode {
@@ -79,9 +84,7 @@ fn build_ui(app: &Application) {
         let mut my_things = Vec::from(things.clone().borrow().clone());
         my_things.reverse();
         for thing in my_things {
-            context.set_source_rgb(thing.borrow().red, thing.borrow().green, thing.borrow().blue);
-            context.rectangle(thing.borrow().x, thing.borrow().y, thing.borrow().width, thing.borrow().height);
-            context.fill().unwrap();
+            thing.borrow().draw(context).unwrap();
         }
     }));
     let drag = GestureDrag::new();
