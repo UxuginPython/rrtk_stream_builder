@@ -70,30 +70,50 @@ struct Node {
     pub x: f64,
     pub y: f64,
     pub dragging: bool,
+    left_nodes: u8,
+    right_nodes: u8,
 }
 impl Node {
-    fn new(x: f64, y: f64) -> Node {
+    fn new(left_nodes: u8, right_nodes: u8, x: f64, y: f64) -> Node {
+        let max_nodes = if left_nodes >= right_nodes {
+            left_nodes
+        } else {
+            right_nodes
+        };
+        let height = (max_nodes as f64) * 20.0 + 10.0;
         Node {
             width: 100.0,
-            height: 60.0,
+            height: height,
             x: x,
             y: y,
             dragging: false,
+            left_nodes: left_nodes,
+            right_nodes: right_nodes,
         }
     }
     fn detect_drag(&mut self, click_x: f64, click_y: f64) -> bool {
         self.dragging = self.x <= click_x
             && click_x <= self.x + self.width
             && self.y <= click_y
-            && click_y <= self.y + self.height
-            && !(self.x + 10.0 <= click_x
+            && click_y <= self.y + self.height;
+        for i in 0..self.left_nodes {
+            if self.x + 10.0 <= click_x
                 && click_x <= self.x + 20.0
-                && self.y + 10.0 <= click_y
-                && click_y <= self.y + 20.0)
-            && !(self.x + self.width - 20.0 <= click_x
-                 && click_x <= self.x + self.width - 10.0
-                 && self.y + 10.0 <= click_y
-                 && click_y <= self.y + 20.0);
+                && self.y + 20.0 * (i as f64) + 10.0 <= click_y
+                && click_y <= self.y + 20.0 * (i as f64) + 20.0
+            {
+                self.dragging = false;
+            }
+        }
+        for i in 0..self.right_nodes {
+            if self.x + self.width - 20.0 <= click_x
+                && click_x <= self.x + self.width - 10.0
+                && self.y + 20.0 * (i as f64) + 10.0 <= click_y
+                && click_y <= self.y + 20.0 * (i as f64) + 20.0
+            {
+                self.dragging = false;
+            }
+        }
         self.dragging
     }
     fn draw(&self, context: &Context) -> Result<(), cairo::Error> {
@@ -101,9 +121,17 @@ impl Node {
         context.rectangle(self.x, self.y, self.width, self.height);
         context.fill()?;
         context.set_source_rgb(0.0, 0.0, 0.0);
-        context.rectangle(self.x + 10.0, self.y + 10.0, 10.0, 10.0);
-        context.fill()?;
-        context.rectangle(self.x + self.width - 20.0, self.y + 10.0, 10.0, 10.0);
+        for i in 0..self.left_nodes {
+            context.rectangle(self.x + 10.0, self.y + 20.0 * (i as f64) + 10.0, 10.0, 10.0);
+        }
+        for i in 0..self.right_nodes {
+            context.rectangle(
+                self.x + self.width - 20.0,
+                self.y + 20.0 * (i as f64) + 10.0,
+                10.0,
+                10.0,
+            );
+        }
         context.fill()
     }
 }
@@ -121,8 +149,9 @@ fn build_ui(app: &Application) {
         Rc::new(RefCell::new(Thing::new(0.0, 0.0, 1.0, 100.0, 100.0, 200.0, 100.0))),
     ])));*/
     let things = Rc::new(RefCell::new(VecDeque::from([
-        Rc::new(Rc::new(RefCell::new(Node::new(0.0, 0.0)))),
-        Rc::new(Rc::new(RefCell::new(Node::new(100.0, 0.0)))),
+        Rc::new(Rc::new(RefCell::new(Node::new(1, 1, 0.0, 0.0)))),
+        Rc::new(Rc::new(RefCell::new(Node::new(2, 1, 100.0, 0.0)))),
+        Rc::new(Rc::new(RefCell::new(Node::new(3, 2, 200.0, 0.0)))),
     ])));
     let drawing_area = Rc::new(
         DrawingArea::builder()
