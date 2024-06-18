@@ -47,6 +47,10 @@ impl Thing {
             dragging: false,
         }
     }
+    fn detect_drag(&mut self, click_x: f64, click_y: f64) -> bool {
+        self.dragging = self.x <= click_x && click_x <= self.x + self.width && self.y <= click_y && click_y <= self.y + self.height;
+        self.dragging
+    }
 }
 const APP_ID: &str = "com.uxugin.gtk-cairo-test";
 fn main() -> glib::ExitCode {
@@ -55,7 +59,7 @@ fn main() -> glib::ExitCode {
     app.run()
 }
 fn build_ui(app: &Application) {
-    let mut drag_info = Rc::new(RefCell::new(DragInfo::new(0.0, 0.0)));
+    let drag_info = Rc::new(RefCell::new(DragInfo::new(0.0, 0.0)));
     let things = Rc::new(RefCell::new(VecDeque::from([
         Rc::new(RefCell::new(Thing::new(1.0, 0.0, 0.0, 100.0, 100.0, 0.0, 100.0))),
         Rc::new(RefCell::new(Thing::new(0.0, 1.0, 0.0, 100.0, 100.0, 100.0, 100.0))),
@@ -135,8 +139,7 @@ fn build_ui(app: &Application) {
     click.connect_pressed(clone!(@strong drawing_area, @strong things, @strong drag_info => move |_gesture: &GestureClick, _click_count: i32, click_x: f64, click_y: f64| {
         let mut export = None;
         for (i, thing) in things.clone().borrow().clone().into_iter().enumerate() {
-            thing.borrow_mut().dragging = thing.borrow().x <= click_x && click_x <= thing.borrow().x + thing.borrow().width && thing.borrow().y <= click_y && click_y <= thing.borrow().y + 100.0;
-            if thing.borrow().dragging {
+            if thing.borrow_mut().detect_drag(click_x, click_y) {
                 drag_info.borrow_mut().start_x = click_x;
                 drag_info.borrow_mut().start_y = click_y;
                 let relative_x = thing.borrow().x - click_x;
