@@ -1,9 +1,9 @@
 const AREA_WIDTH: i32 = 300;
 const AREA_HEIGHT: i32 = 300;
-use gtk4::prelude::*;
-use gtk4::{cairo, glib, Application, ApplicationWindow, DrawingArea, GestureDrag};
 use cairo::Context;
 use glib::clone;
+use gtk4::prelude::*;
+use gtk4::{cairo, glib, Application, ApplicationWindow, DrawingArea, GestureDrag};
 use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::rc::Rc;
@@ -48,7 +48,11 @@ impl Thing {
         }
     }
     fn detect_drag(&mut self, click_x: f64, click_y: f64) -> bool {
-        self.dragging = self.x <= click_x && click_x <= self.x + self.width && self.y <= click_y && click_y <= self.y + self.height && !(click_x <= self.x + 20.0 && click_y <= self.y + 20.0);
+        self.dragging = self.x <= click_x
+            && click_x <= self.x + self.width
+            && self.y <= click_y
+            && click_y <= self.y + self.height
+            && !(click_x <= self.x + 20.0 && click_y <= self.y + 20.0);
         self.dragging
     }
     fn draw(&self, context: &Context) -> Result<(), cairo::Error> {
@@ -78,7 +82,18 @@ impl Node {
         }
     }
     fn detect_drag(&mut self, click_x: f64, click_y: f64) -> bool {
-        self.dragging = self.x <= click_x && click_x <= self.x + self.width && self.y <= click_y && click_y <= self.y + self.height && !((self.x + 10.0 <= click_x && click_x <= self.x + 20.0 && self.y + 10.0 <= click_y && click_y <= self.y + 20.0));
+        self.dragging = self.x <= click_x
+            && click_x <= self.x + self.width
+            && self.y <= click_y
+            && click_y <= self.y + self.height
+            && !(self.x + 10.0 <= click_x
+                && click_x <= self.x + 20.0
+                && self.y + 10.0 <= click_y
+                && click_y <= self.y + 20.0)
+            && !(self.x + self.width - 20.0 <= click_x
+                 && click_x <= self.x + self.width - 10.0
+                 && self.y + 10.0 <= click_y
+                 && click_y <= self.y + 20.0);
         self.dragging
     }
     fn draw(&self, context: &Context) -> Result<(), cairo::Error> {
@@ -87,6 +102,8 @@ impl Node {
         context.fill()?;
         context.set_source_rgb(0.0, 0.0, 0.0);
         context.rectangle(self.x + 10.0, self.y + 10.0, 10.0, 10.0);
+        context.fill()?;
+        context.rectangle(self.x + self.width - 20.0, self.y + 10.0, 10.0, 10.0);
         context.fill()
     }
 }
@@ -104,13 +121,15 @@ fn build_ui(app: &Application) {
         Rc::new(RefCell::new(Thing::new(0.0, 0.0, 1.0, 100.0, 100.0, 200.0, 100.0))),
     ])));*/
     let things = Rc::new(RefCell::new(VecDeque::from([
-         Rc::new(Rc::new(RefCell::new(Node::new(0.0, 0.0)))),
-         Rc::new(Rc::new(RefCell::new(Node::new(100.0, 0.0)))),
+        Rc::new(Rc::new(RefCell::new(Node::new(0.0, 0.0)))),
+        Rc::new(Rc::new(RefCell::new(Node::new(100.0, 0.0)))),
     ])));
-    let drawing_area = Rc::new(DrawingArea::builder()
-        .content_width(AREA_WIDTH)
-        .content_height(AREA_HEIGHT)
-        .build());
+    let drawing_area = Rc::new(
+        DrawingArea::builder()
+            .content_width(AREA_WIDTH)
+            .content_height(AREA_HEIGHT)
+            .build(),
+    );
     drawing_area.set_draw_func(clone!(@strong drawing_area, @strong things, @strong drag_info => move |_drawing_area: &DrawingArea, context: &Context, _width: i32, _height: i32| {
         context.select_font_face("Sans", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
         context.set_font_size(24.0);
