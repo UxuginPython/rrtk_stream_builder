@@ -91,7 +91,7 @@ fn build_ui(app: &Application) {
     let click = GestureClick::new();
     drawing_area.add_controller(drag.clone());
     drawing_area.add_controller(click.clone());
-    drag.connect_drag_end(clone!(@strong drawing_area, @strong things, @strong drag_info => move |_gesture: &GestureDrag, x: f64, y: f64| {
+    let dragging_func = clone!(@strong drawing_area, @strong things, @strong drag_info => move |_gesture: &GestureDrag, x: f64, y: f64| {
         for thing in things.clone().borrow().clone() {
             if thing.borrow().dragging {
                 let draw_x = drag_info.borrow().start_x + drag_info.borrow().relative_x + x;
@@ -114,31 +114,9 @@ fn build_ui(app: &Application) {
                 break;
             }
         }
-    }));
-    drag.connect_drag_update(clone!(@strong drawing_area, @strong things, @strong drag_info => move |_gesture: &GestureDrag, x: f64, y: f64| {
-        for thing in things.clone().borrow().clone() {
-            if thing.borrow().dragging {
-                let draw_x = drag_info.borrow().start_x + drag_info.borrow().relative_x + x;
-                let draw_y = drag_info.borrow().start_y + drag_info.borrow().relative_y + y;
-                thing.borrow_mut().x = draw_x;
-                thing.borrow_mut().y = draw_y;
-                let max_x = AREA_WIDTH as f64 - thing.borrow().width;
-                let max_y = AREA_HEIGHT as f64 - thing.borrow().height;
-                if thing.borrow().x < 0.0 {
-                    thing.borrow_mut().x = 0.0;
-                } else if thing.borrow().x > max_x {
-                    thing.borrow_mut().x = max_x;
-                }
-                if thing.borrow().y < 0.0 {
-                    thing.borrow_mut().y = 0.0;
-                } else if thing.borrow().y > max_y {
-                    thing.borrow_mut().y = max_y;
-                }
-                drawing_area.queue_draw();
-                break;
-            }
-        }
-    }));
+    });
+    drag.connect_drag_end(dragging_func.clone());
+    drag.connect_drag_update(dragging_func.clone());
     click.connect_pressed(clone!(@strong drawing_area, @strong things, @strong drag_info => move |_gesture: &GestureClick, _click_count: i32, click_x: f64, click_y: f64| {
         let mut export = None;
         for (i, thing) in things.clone().borrow().clone().into_iter().enumerate() {
