@@ -56,6 +56,12 @@ fn build_ui(app: &Application) {
         .content_height(AREA_HEIGHT)
         .build());
     drawing_area.set_draw_func(clone!(@strong drawing_area, @strong things => move |_drawing_area: &DrawingArea, context: &Context, _width: i32, _height: i32| {
+        context.select_font_face("Sans", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
+        context.set_font_size(24.0);
+        context.set_source_rgb(0.0, 0.0, 0.0);
+        let extents = context.text_extents("Hello world!").unwrap();
+        context.move_to((AREA_WIDTH/2) as f64 - extents.width() / 2.0, (AREA_HEIGHT/2) as f64 + extents.height() / 2.0);
+        context.show_text("Hello world!").unwrap();
         let mut my_things = Vec::from(things.clone().borrow().clone());
         my_things.reverse();
         for thing in my_things {
