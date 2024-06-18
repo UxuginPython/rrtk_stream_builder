@@ -60,6 +60,36 @@ impl Thing {
         context.fill()
     }
 }
+struct Node {
+    pub width: f64,
+    pub height: f64,
+    pub x: f64,
+    pub y: f64,
+    pub dragging: bool,
+}
+impl Node {
+    fn new(x: f64, y: f64) -> Node {
+        Node {
+            width: 100.0,
+            height: 60.0,
+            x: x,
+            y: y,
+            dragging: false,
+        }
+    }
+    fn detect_drag(&mut self, click_x: f64, click_y: f64) -> bool {
+        self.dragging = self.x <= click_x && click_x <= self.x + self.width && self.y <= click_y && click_y <= self.y + self.height && !((self.x + 10.0 <= click_x && click_x <= self.x + 20.0 && self.y + 10.0 <= click_y && click_y <= self.y + 20.0));
+        self.dragging
+    }
+    fn draw(&self, context: &Context) -> Result<(), cairo::Error> {
+        context.set_source_rgb(0.5, 0.5, 0.5);
+        context.rectangle(self.x, self.y, self.width, self.height);
+        context.fill()?;
+        context.set_source_rgb(0.0, 0.0, 0.0);
+        context.rectangle(self.x + 10.0, self.y + 10.0, 10.0, 10.0);
+        context.fill()
+    }
+}
 const APP_ID: &str = "com.uxugin.gtk-cairo-test";
 fn main() -> glib::ExitCode {
     let app = Application::builder().application_id(APP_ID).build();
@@ -68,10 +98,14 @@ fn main() -> glib::ExitCode {
 }
 fn build_ui(app: &Application) {
     let drag_info = Rc::new(RefCell::new(DragInfo::new(0.0, 0.0)));
-    let things = Rc::new(RefCell::new(VecDeque::from([
+    /*let things = Rc::new(RefCell::new(VecDeque::from([
         Rc::new(RefCell::new(Thing::new(1.0, 0.0, 0.0, 100.0, 100.0, 0.0, 100.0))),
         Rc::new(RefCell::new(Thing::new(0.0, 1.0, 0.0, 100.0, 100.0, 100.0, 100.0))),
         Rc::new(RefCell::new(Thing::new(0.0, 0.0, 1.0, 100.0, 100.0, 200.0, 100.0))),
+    ])));*/
+    let things = Rc::new(RefCell::new(VecDeque::from([
+         Rc::new(Rc::new(RefCell::new(Node::new(0.0, 0.0)))),
+         Rc::new(Rc::new(RefCell::new(Node::new(100.0, 0.0)))),
     ])));
     let drawing_area = Rc::new(DrawingArea::builder()
         .content_width(AREA_WIDTH)
