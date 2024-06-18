@@ -1,7 +1,7 @@
 const AREA_WIDTH: i32 = 300;
 const AREA_HEIGHT: i32 = 300;
 use gtk4::prelude::*;
-use gtk4::{cairo, glib, Application, ApplicationWindow, DrawingArea, GestureClick, GestureDrag};
+use gtk4::{cairo, glib, Application, ApplicationWindow, DrawingArea, GestureDrag};
 use cairo::Context;
 use glib::clone;
 use std::cell::RefCell;
@@ -88,9 +88,7 @@ fn build_ui(app: &Application) {
         }
     }));
     let drag = GestureDrag::new();
-    let click = GestureClick::new();
     drawing_area.add_controller(drag.clone());
-    drawing_area.add_controller(click.clone());
     let dragging_func = clone!(@strong drawing_area, @strong things, @strong drag_info => move |_gesture: &GestureDrag, x: f64, y: f64| {
         for thing in things.clone().borrow().clone() {
             if thing.borrow().dragging {
@@ -117,7 +115,7 @@ fn build_ui(app: &Application) {
     });
     drag.connect_drag_end(dragging_func.clone());
     drag.connect_drag_update(dragging_func.clone());
-    click.connect_pressed(clone!(@strong drawing_area, @strong things, @strong drag_info => move |_gesture: &GestureClick, _click_count: i32, click_x: f64, click_y: f64| {
+    drag.connect_drag_begin(clone!(@strong drawing_area, @strong things, @strong drag_info => move |_gesture: &GestureDrag, click_x: f64, click_y: f64| {
         let mut export = None;
         for (i, thing) in things.clone().borrow().clone().into_iter().enumerate() {
             if thing.borrow_mut().detect_drag(click_x, click_y) {
