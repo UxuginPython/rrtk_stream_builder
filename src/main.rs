@@ -1,5 +1,5 @@
-const AREA_WIDTH: i32 = 300;
-const AREA_HEIGHT: i32 = 300;
+const AREA_WIDTH: i32 = 500;
+const AREA_HEIGHT: i32 = 500;
 use cairo::Context;
 use glib::clone;
 use gtk4::prelude::*;
@@ -72,9 +72,10 @@ struct Node {
     pub dragging: bool,
     left_nodes: u8,
     right_nodes: u8,
+    text: &'static str,
 }
 impl Node {
-    fn new(left_nodes: u8, right_nodes: u8, x: f64, y: f64) -> Node {
+    fn new(left_nodes: u8, right_nodes: u8, x: f64, y: f64, text: &'static str) -> Node {
         let max_nodes = if left_nodes >= right_nodes {
             left_nodes
         } else {
@@ -89,6 +90,7 @@ impl Node {
             dragging: false,
             left_nodes: left_nodes,
             right_nodes: right_nodes,
+            text: text,
         }
     }
     fn detect_drag(&mut self, click_x: f64, click_y: f64) -> bool {
@@ -121,6 +123,11 @@ impl Node {
         context.rectangle(self.x, self.y, self.width, self.height);
         context.fill()?;
         context.set_source_rgb(0.0, 0.0, 0.0);
+        context.select_font_face("Sans", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
+        context.set_font_size(12.0);
+        let extents = context.text_extents(self.text).unwrap();
+        context.move_to(self.x + 30.0, self.y + self.height / 2.0 + extents.height() / 2.0);
+        context.show_text(self.text)?;
         for i in 0..self.left_nodes {
             context.rectangle(self.x + 10.0, self.y + 20.0 * (i as f64) + 10.0, 10.0, 10.0);
         }
@@ -149,9 +156,9 @@ fn build_ui(app: &Application) {
         Rc::new(RefCell::new(Thing::new(0.0, 0.0, 1.0, 100.0, 100.0, 200.0, 100.0))),
     ])));*/
     let things = Rc::new(RefCell::new(VecDeque::from([
-        Rc::new(Rc::new(RefCell::new(Node::new(1, 1, 0.0, 0.0)))),
-        Rc::new(Rc::new(RefCell::new(Node::new(2, 1, 100.0, 0.0)))),
-        Rc::new(Rc::new(RefCell::new(Node::new(3, 2, 200.0, 0.0)))),
+        Rc::new(Rc::new(RefCell::new(Node::new(1, 1, 0.0, 0.0, "Lorem")))),
+        Rc::new(Rc::new(RefCell::new(Node::new(2, 1, 200.0, 0.0, "Ipsum")))),
+        Rc::new(Rc::new(RefCell::new(Node::new(3, 2, 400.0, 0.0, "Dolor")))),
     ])));
     let drawing_area = Rc::new(
         DrawingArea::builder()
@@ -160,12 +167,6 @@ fn build_ui(app: &Application) {
             .build(),
     );
     drawing_area.set_draw_func(clone!(@strong drawing_area, @strong things, @strong drag_info => move |_drawing_area: &DrawingArea, context: &Context, _width: i32, _height: i32| {
-        context.select_font_face("Sans", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
-        context.set_font_size(24.0);
-        context.set_source_rgb(0.0, 0.0, 0.0);
-        let extents = context.text_extents("Hello world!").unwrap();
-        context.move_to((AREA_WIDTH/2) as f64 - extents.width() / 2.0, (AREA_HEIGHT/2) as f64 + extents.height() / 2.0);
-        context.show_text("Hello world!").unwrap();
         let mut my_things = Vec::from(things.clone().borrow().clone());
         my_things.reverse();
         for thing in my_things {
