@@ -48,12 +48,15 @@ impl Thing {
         }
     }
     fn detect_drag(&mut self, click_x: f64, click_y: f64) -> bool {
-        self.dragging = self.x <= click_x && click_x <= self.x + self.width && self.y <= click_y && click_y <= self.y + self.height;
+        self.dragging = self.x <= click_x && click_x <= self.x + self.width && self.y <= click_y && click_y <= self.y + self.height && !(click_x <= self.x + 20.0 && click_y <= self.y + 20.0);
         self.dragging
     }
     fn draw(&self, context: &Context) -> Result<(), cairo::Error> {
         context.set_source_rgb(self.red, self.green, self.blue);
         context.rectangle(self.x, self.y, self.width, self.height);
+        context.fill()?;
+        context.set_source_rgb(0.0, 0.0, 0.0);
+        context.rectangle(self.x, self.y, 20.0, 20.0);
         context.fill()
     }
 }
