@@ -106,10 +106,23 @@ fn build_ui(app: &Application) {
         }
     }));
     let drag = GestureDrag::new();
-    let dragging_func = clone!(@strong drawing_area => move |gesture: &GestureDrag, x: f64, y: f64| {
-        todo!();
+    let dragging_func = clone!(@strong drawing_area, @strong drag_info => move |gesture: &GestureDrag, x: f64, y: f64| {
+        match &*drag_info.borrow() {
+            DragInfo::Idle => {}
+            DragInfo::Move {node, start_x, start_y, relative_x, relative_y} => {
+                node.borrow_mut().x = start_x - relative_x + x;
+                node.borrow_mut().y = start_y - relative_y + y;
+                drawing_area.queue_draw();
+            }
+            DragInfo::Connect => {
+                todo!();
+            }
+        }
     });
-    drag.connect_drag_end(dragging_func);
+    drag.connect_drag_end(clone!(@strong drag_info, @strong dragging_func => move |gesture: &GestureDrag, width: f64, height: f64| {
+        dragging_func(gesture, width, height);
+        *drag_info.borrow_mut() = DragInfo::Idle;
+    }));
     drag.connect_drag_update(dragging_func);
     drag.connect_drag_begin(clone!(@strong drawing_area, @strong nodes => move |gesture: &GestureDrag, x: f64, y: f64| {
         for i in &*nodes {
