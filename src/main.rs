@@ -92,12 +92,18 @@ fn limit(min: f64, max: f64, num: f64) -> f64 {
     output
 }
 fn build_ui(app: &Application) {
+    let nodes = Rc::new([
+        Rc::new(RefCell::new(Node::new(100.0, 100.0))),
+    ]);
+    let drag_info = Rc::new(RefCell::new(DragInfo::Idle));
     let drawing_area = DrawingArea::builder()
         .content_width(AREA_WIDTH)
         .content_height(AREA_HEIGHT)
         .build();
-    drawing_area.set_draw_func(clone!(@strong drawing_area => move |drawing_area: &DrawingArea, context: &Context, width: i32, height: i32| {
-        todo!();
+    drawing_area.set_draw_func(clone!(@strong drawing_area, @strong nodes => move |drawing_area: &DrawingArea, context: &Context, width: i32, height: i32| {
+        for i in &*nodes {
+            i.borrow().draw(context).unwrap();
+        }
     }));
     let drag = GestureDrag::new();
     let dragging_func = clone!(@strong drawing_area => move |gesture: &GestureDrag, x: f64, y: f64| {
@@ -105,8 +111,24 @@ fn build_ui(app: &Application) {
     });
     drag.connect_drag_end(dragging_func);
     drag.connect_drag_update(dragging_func);
-    drag.connect_drag_begin(clone!(@strong drawing_area => move |gesture: &GestureDrag, x: f64, y: f64| {
-        todo!();
+    drag.connect_drag_begin(clone!(@strong drawing_area, @strong nodes => move |gesture: &GestureDrag, x: f64, y: f64| {
+        for i in &*nodes {
+            match i.borrow().get_clicked(x, y) {
+                Clicked::Nothing => {}
+                Clicked::Body => {
+                    *drag_info.borrow_mut() = DragInfo::Move {
+                        node: Rc::clone(i),
+                        start_x: x,
+                        start_y: y,
+                        relative_x: x - i.borrow().x,
+                        relative_y: y - i.borrow().y,
+                    }
+                }
+                Clicked::Terminal(local_terminal) => {
+                    todo!();
+                }
+            }
+        }
     }));
     drawing_area.add_controller(drag);
     let window = ApplicationWindow::builder()
