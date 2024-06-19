@@ -7,30 +7,55 @@ use gtk4::{cairo, glib, Application, ApplicationWindow, DrawingArea, GestureDrag
 use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::rc::Rc;
-#[derive(Clone)]
-struct DragInfo {
-    pub start_x: f64,
-    pub start_y: f64,
-    pub relative_x: f64,
-    pub relative_y: f64,
+fn limit(min: f64, max: f64, num: f64) -> f64 {
+    let mut output = num;
+    if output < min {
+        output = min;
+    } else if output > max {
+        output = max;
+    }
+    output
+}
+#[derive(Clone, Debug)]
+enum DragInfo {
+    Nothing,
+    Move {
+        node: usize,
+        start_x: f64,
+        start_y: f64,
+        relative_x: f64,
+        relative_y: f64,
+    },
+    Connect {
+        start_node: usize,
+        start_term: u8,
+    },
 }
 impl DragInfo {
-    fn new(x: f64, y: f64) -> DragInfo {
-        DragInfo {
+    fn new_move(node: usize, x: f64, y: f64) -> DragInfo {
+        DragInfo::Move {
+            node: node,
             start_x: x,
             start_y: y,
             relative_x: 0.0,
             relative_y: 0.0,
         }
     }
+    fn new_connect(start_node: usize, start_term: u8) -> DragInfo {
+        DragInfo::Connect {
+            start_node: start_node,
+            start_term: start_term,
+        }
+    }
 }
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 enum Clicked {
     Nothing,
     Body,
     Left(u8),
     Right(u8),
 }
+#[derive(Clone)]
 struct Node {
     pub width: f64,
     pub height: f64,
@@ -115,6 +140,22 @@ impl Node {
         context.fill()
     }
 }
+struct Connection {
+    start_node: usize,
+    start_term: u8,
+    end_node: usize,
+    end_term: u8,
+}
+impl Connection {
+    fn new(start_node: usize, start_term: u8, end_node: usize, end_term: u8) -> Connection {
+        Connection {
+            start_node: start_node,
+            start_term: start_term,
+            end_node: end_node,
+            end_term: end_term,
+        }
+    }
+}
 const APP_ID: &str = "com.uxugin.gtk-cairo-test";
 fn main() -> glib::ExitCode {
     let app = Application::builder().application_id(APP_ID).build();
@@ -122,17 +163,13 @@ fn main() -> glib::ExitCode {
     app.run()
 }
 fn build_ui(app: &Application) {
-    let drag_info = Rc::new(RefCell::new(DragInfo::new(0.0, 0.0)));
-    /*let things = Rc::new(RefCell::new(VecDeque::from([
-        Rc::new(RefCell::new(Thing::new(1.0, 0.0, 0.0, 100.0, 100.0, 0.0, 100.0))),
-        Rc::new(RefCell::new(Thing::new(0.0, 1.0, 0.0, 100.0, 100.0, 100.0, 100.0))),
-        Rc::new(RefCell::new(Thing::new(0.0, 0.0, 1.0, 100.0, 100.0, 200.0, 100.0))),
-    ])));*/
+    let drag_info = Rc::new(RefCell::new(DragInfo::Nothing));
     let things = Rc::new(RefCell::new(VecDeque::from([
-        Rc::new(Rc::new(RefCell::new(Node::new(1, 1, 0.0, 0.0, "Lorem")))),
-        Rc::new(Rc::new(RefCell::new(Node::new(2, 1, 200.0, 0.0, "Ipsum")))),
-        Rc::new(Rc::new(RefCell::new(Node::new(3, 2, 400.0, 0.0, "Dolor")))),
+        Node::new(1, 1, 0.0, 0.0, "Lorem"),
+        Node::new(2, 1, 200.0, 0.0, "Ipsum"),
+        Node::new(3, 2, 400.0, 0.0, "Dolor"),
     ])));
+    //let connections = Rc::new(RefCell::new(Vec::new()));
     let drawing_area = Rc::new(
         DrawingArea::builder()
             .content_width(AREA_WIDTH)
@@ -143,12 +180,26 @@ fn build_ui(app: &Application) {
         let mut my_things = Vec::from(things.clone().borrow().clone());
         my_things.reverse();
         for thing in my_things {
-            thing.borrow().draw(context).unwrap();
+            thing.draw(context).unwrap();
         }
     }));
     let drag = GestureDrag::new();
     drawing_area.add_controller(drag.clone());
-    let dragging_func = clone!(@strong drawing_area, @strong things, @strong drag_info => move |_gesture: &GestureDrag, x: f64, y: f64| {
+    let dragging_func = clone!(@strong drawing_area, @strong things, @strong drag_info => move |_gesture: &GestureDrag, drag_x: f64, drag_y: f64| {
+        let mut my_things = things.borrow_mut();
+        match *drag_info.borrow() {
+            DragInfo::Nothing => {}
+            DragInfo::Move {node, start_x, start_y, relative_x, relative_y} => {
+                let draw_x = start_x + relative_x + drag_x;
+                let draw_y = start_y + relative_y + drag_y;
+                my_things[node].x = limit(0.0, (AREA_WIDTH as f64) - my_things[node].width, draw_x);
+                my_things[node].y = limit(0.0, (AREA_HEIGHT as f64) - my_things[node].height, draw_y);
+                drawing_area.queue_draw();
+            }
+            DragInfo::Connect {start_node, start_term} => {}
+        }
+    });
+    /*let dragging_func = clone!(@strong drawing_area, @strong things, @strong drag_info => move |_gesture: &GestureDrag, x: f64, y: f64| {
         for thing in things.clone().borrow().clone() {
             if thing.borrow().dragging {
                 let draw_x = drag_info.borrow().start_x + drag_info.borrow().relative_x + x;
@@ -171,21 +222,26 @@ fn build_ui(app: &Application) {
                 break;
             }
         }
-    });
+    });*/
     drag.connect_drag_end(dragging_func.clone());
     drag.connect_drag_update(dragging_func.clone());
     drag.connect_drag_begin(clone!(@strong drawing_area, @strong things, @strong drag_info => move |_gesture: &GestureDrag, click_x: f64, click_y: f64| {
         let mut export = None;
-        for (i, thing) in things.clone().borrow().clone().into_iter().enumerate() {
-            let clicked = thing.borrow_mut().clicked(click_x, click_y);
+        for (i, mut thing) in things.clone().borrow().clone().into_iter().enumerate() {
+            let clicked = thing.clicked(click_x, click_y);
+            println!("{:?}", clicked);
             match clicked {
                 Clicked::Body => {
-                    drag_info.borrow_mut().start_x = click_x;
-                    drag_info.borrow_mut().start_y = click_y;
-                    let relative_x = thing.borrow().x - click_x;
-                    let relative_y = thing.borrow().y - click_y;
-                    drag_info.borrow_mut().relative_x = relative_x;
-                    drag_info.borrow_mut().relative_y = relative_y;
+                    let relative_x = thing.x - click_x;
+                    let relative_y = thing.y - click_y;
+                    //drag_info = DragInfo::new_move(click_x, click_y, relative_x, relative_y);
+                    *drag_info.borrow_mut() = DragInfo::Move {
+                        node: i,
+                        start_x: click_x,
+                        start_y: click_y,
+                        relative_x: relative_x,
+                        relative_y: relative_y,
+                    };
                     drawing_area.queue_draw();
                     export = Some((i, thing));
                     break;
@@ -195,8 +251,8 @@ fn build_ui(app: &Application) {
         }
         match export {
             Some((i, thing)) => {
-                things.borrow_mut().remove(i);
-                things.borrow_mut().push_front(thing);
+                //things.borrow_mut().remove(i);
+                //things.borrow_mut().push_front(thing);
             }
             None => {}
         }
