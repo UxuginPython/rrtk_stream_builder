@@ -5,10 +5,13 @@ use gtk4::prelude::*;
 use gtk4::{Application, ApplicationWindow, cairo, DrawingArea, GestureDrag, glib};
 use cairo::Context;
 use glib::clone;
+use std::rc::Rc;
+use std::cell::RefCell;
+#[derive(Clone, Debug)]
 enum DragInfo {
     Idle,
     Move {
-        node: usize,
+        node: Rc<RefCell<Node>>,
         start_x: f64,
         start_y: f64,
         relative_x: f64,
@@ -16,23 +19,23 @@ enum DragInfo {
     },
     Connect,
 }
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 enum LocalTerminal {
     Left(u8),
     Right(u8),
 }
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct GlobalTerminal {
     pub node: usize,
     pub terminal: LocalTerminal,
 }
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 enum Clicked {
     Nothing,
     Body,
     Terminal(LocalTerminal),
 }
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct Node {
     x: f64,
     y: f64,
