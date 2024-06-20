@@ -17,17 +17,32 @@ enum DragInfo {
         relative_x: f64,
         relative_y: f64,
     },
-    Connect,
+    Connect {
+        terminal: GlobalTerminal,
+        draw_x: f64,
+        draw_y: f64,
+    },
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 enum LocalTerminal {
     Left(u8),
     Right(u8),
 }
 #[derive(Clone, Debug)]
 struct GlobalTerminal {
-    pub node: usize,
+    pub node: Rc<RefCell<Node>>,
     pub terminal: LocalTerminal,
+}
+impl GlobalTerminal {
+    fn new(node: Rc<RefCell<Node>>, terminal: LocalTerminal) -> Self {
+        Self {
+            node: node,
+            terminal: terminal,
+        }
+    }
+    fn get_xy(&self) -> (f64, f64) {
+        self.node.borrow().get_terminal_xy(self.terminal)
+    }
 }
 #[derive(Clone, Debug)]
 enum Clicked {
@@ -76,13 +91,19 @@ impl Node {
         }
         Clicked::Nothing
     }
+    fn get_terminal_xy(&self, terminal: LocalTerminal) -> (f64, f64) {
+        match terminal {
+            LocalTerminal::Left(index) => (self.x + 15.0, self.y + 20.0 * (index as f64) + 15.0),
+            LocalTerminal::Right(index) => (self.x + 50.0 - 15.0, self.y + 20.0 * (index as f64) + 15.0),
+        }
+    }
 }
 fn main() -> glib::ExitCode {
     let app = Application::builder().application_id(APP_ID).build();
     app.connect_activate(build_ui);
     app.run()
 }
-fn limit(min: f64, max: f64, num: f64) -> f64 {
+/*fn limit(min: f64, max: f64, num: f64) -> f64 {
     let mut output = num;
     if output < min {
         output = min;
@@ -90,7 +111,7 @@ fn limit(min: f64, max: f64, num: f64) -> f64 {
         output = max;
     }
     output
-}
+}*/
 fn build_ui(app: &Application) {
     let nodes = Rc::new([
         Rc::new(RefCell::new(Node::new(100.0, 100.0))),
@@ -100,22 +121,37 @@ fn build_ui(app: &Application) {
         .content_width(AREA_WIDTH)
         .content_height(AREA_HEIGHT)
         .build();
-    drawing_area.set_draw_func(clone!(@strong drawing_area, @strong nodes => move |drawing_area: &DrawingArea, context: &Context, width: i32, height: i32| {
+    drawing_area.set_draw_func(clone!(@strong nodes, @strong drag_info => move |_drawing_area: &DrawingArea, context: &Context, _width: i32, _height: i32| {
         for i in &*nodes {
             i.borrow().draw(context).unwrap();
         }
+        match drag_info.borrow().clone() {
+            DragInfo::Connect {terminal, draw_x, draw_y} => {
+                let (term_x, term_y) = terminal.get_xy();
+                context.set_source_rgb(0.0, 0.0, 0.0);
+                context.line_to(term_x, term_y);
+                context.line_to(draw_x, draw_y);
+                println!("({:?}, {:?}) -> ({:?}, {:?})", term_x, term_y, draw_x, draw_y);
+                context.stroke().unwrap();
+            }
+            _ => {}
+        }
     }));
     let drag = GestureDrag::new();
-    let dragging_func = clone!(@strong drawing_area, @strong drag_info => move |gesture: &GestureDrag, x: f64, y: f64| {
-        match &*drag_info.borrow() {
+    let dragging_func = clone!(@strong drawing_area, @strong drag_info => move |_gesture: &GestureDrag, x: f64, y: f64| {
+        match drag_info.borrow().clone() {
             DragInfo::Idle => {}
             DragInfo::Move {node, start_x, start_y, relative_x, relative_y} => {
                 node.borrow_mut().x = start_x - relative_x + x;
                 node.borrow_mut().y = start_y - relative_y + y;
                 drawing_area.queue_draw();
             }
-            DragInfo::Connect => {
-                todo!();
+            DragInfo::Connect {terminal, mut draw_x, mut draw_y} => {
+                println!("dragging_func ({:?}, {:?})", x, y);
+                let (term_x, term_y) = terminal.get_xy();
+                draw_x = term_x + x;
+                draw_y = term_y + y;
+                drawing_area.queue_draw();
             }
         }
     });
@@ -124,7 +160,7 @@ fn build_ui(app: &Application) {
         *drag_info.borrow_mut() = DragInfo::Idle;
     }));
     drag.connect_drag_update(dragging_func);
-    drag.connect_drag_begin(clone!(@strong drawing_area, @strong nodes => move |gesture: &GestureDrag, x: f64, y: f64| {
+    drag.connect_drag_begin(clone!(@strong drawing_area, @strong nodes => move |_gesture: &GestureDrag, x: f64, y: f64| {
         for i in &*nodes {
             match i.borrow().get_clicked(x, y) {
                 Clicked::Nothing => {}
@@ -138,7 +174,11 @@ fn build_ui(app: &Application) {
                     }
                 }
                 Clicked::Terminal(local_terminal) => {
-                    todo!();
+                    *drag_info.borrow_mut() = DragInfo::Connect {
+                        terminal: GlobalTerminal::new(i.clone(), local_terminal),
+                        draw_x: x,
+                        draw_y: y,
+                    };
                 }
             }
         }
