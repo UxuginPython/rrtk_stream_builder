@@ -35,6 +35,11 @@ struct GlobalTerminal {
     node: Rc<RefCell<Node>>,
     terminal: LocalTerminal,
 }
+impl GlobalTerminal {
+    fn get_xy(&self) -> (f64, f64) {
+        self.node.borrow().get_terminal_xy(self.terminal.clone())
+    }
+}
 #[derive(Clone, Debug)]
 enum Clicked {
     Body,
@@ -81,6 +86,12 @@ impl Node {
         }
         None
     }
+    fn get_terminal_xy(&self, terminal: LocalTerminal) -> (f64, f64) {
+        match terminal {
+            LocalTerminal::Left(index) => (self.x + 15.0, self.y + 15.0 + 20.0 * (index as f64)),
+            LocalTerminal::Right(index) => (self.x + 50.0 - 15.0, self.y + 15.0 + 20.0 * (index as f64))
+        }
+    }
 }
 fn main() -> glib::ExitCode {
     let app = Application::builder().application_id(APP_ID).build();
@@ -105,9 +116,25 @@ fn build_ui(app: &Application) {
         .content_width(AREA_WIDTH)
         .content_height(AREA_HEIGHT)
         .build();
-    drawing_area.set_draw_func(clone!(@strong nodes => move |_drawing_area: &DrawingArea, context: &Context, _width: i32, _height: i32| {
+    drawing_area.set_draw_func(clone!(@strong nodes, @strong drag_info => move |_drawing_area: &DrawingArea, context: &Context, _width: i32, _height: i32| {
         for i in &*nodes {
             i.borrow().draw(context).unwrap();
+        }
+        let borrow = drag_info.borrow();
+        match borrow.as_ref() {
+            Some(drag_info_rfcl) => {
+                let drag_info_ref = drag_info_rfcl.borrow();
+                match &drag_info_ref.action {
+                    DragAction::Connect(global_terminal) => {
+                        let (start_x, start_y) = global_terminal.get_xy();
+                        context.line_to(start_x, start_y);
+                        context.line_to(drag_info_ref.current_x, drag_info_ref.current_y);
+                        context.stroke().unwrap();
+                    }
+                    _ => {}
+                }
+            }
+            None => {}
         }
     }));
     let drag = GestureDrag::new();
@@ -124,13 +151,15 @@ fn build_ui(app: &Application) {
                 drawing_area.queue_draw();
             }
             DragAction::Connect(global_terminal) => {
-                todo!();
+                drawing_area.queue_draw();
             }
             DragAction::Nothing => {}
         }
     });
-    drag.connect_drag_end(clone!(@strong drag_info, @strong dragging_func => move |gesture: &GestureDrag, width: f64, height: f64| {
-        todo!();
+    drag.connect_drag_end(clone!(@strong drag_info, @strong dragging_func => move |gesture: &GestureDrag, x: f64, y: f64| {
+        dragging_func(gesture, x, y);
+        let mut drag_info_option = drag_info.borrow_mut();
+        *drag_info_option = None;
     }));
     drag.connect_drag_update(dragging_func);
     drag.connect_drag_begin(clone!(@strong drawing_area, @strong nodes, @strong drag_info => move |gesture: &GestureDrag, x: f64, y: f64| {
