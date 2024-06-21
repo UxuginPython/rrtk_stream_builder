@@ -100,7 +100,7 @@ fn build_ui(app: &Application) {
     let nodes = Rc::new([
         Rc::new(RefCell::new(Node::new(100.0, 100.0))),
     ]);
-    let drag_info: Rc<Cell<Option<RefCell<DragInfo>>>> = Rc::new(Cell::new(None));
+    let drag_info: Rc<RefCell<Option<RefCell<DragInfo>>>> = Rc::new(RefCell::new(None));
     let drawing_area = DrawingArea::builder()
         .content_width(AREA_WIDTH)
         .content_height(AREA_HEIGHT)
@@ -125,7 +125,7 @@ fn build_ui(app: &Application) {
                 None => {}
                 Some(clicked) => match clicked {
                     Clicked::Body => {
-                        drag_info.set(Some(RefCell::new(DragInfo {
+                        *drag_info.borrow_mut() = Some(RefCell::new(DragInfo {
                             start_x: x,
                             start_y: y,
                             current_x: x,
@@ -135,7 +135,7 @@ fn build_ui(app: &Application) {
                                 relative_x: x - i_ref.x,
                                 relative_y: y - i_ref.y,
                             }
-                        })));
+                        }));
                         return;
                     }
                     Clicked::Terminal(local_terminal) => {
@@ -143,25 +143,25 @@ fn build_ui(app: &Application) {
                             node: Rc::clone(&i),
                             terminal: local_terminal,
                         };
-                        drag_info.set(Some(RefCell::new(DragInfo {
+                        *drag_info.borrow_mut() = Some(RefCell::new(DragInfo {
                             start_x: x,
                             start_y: y,
                             current_x: x,
                             current_y: y,
                             action: DragAction::Connect(global_terminal),
-                        })));
+                        }));
                         return;
                     }
                 }
             }
         }
-        drag_info.set(Some(RefCell::new(DragInfo {
+        *drag_info.borrow_mut() = Some(RefCell::new(DragInfo {
             start_x: x,
             start_y: y,
             current_x: x,
             current_y: y,
             action: DragAction::Nothing,
-        })));
+        }));
     }));
     drawing_area.add_controller(drag);
     let window = ApplicationWindow::builder()
