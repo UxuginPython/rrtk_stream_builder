@@ -119,8 +119,8 @@ fn build_ui(app: &Application) {
         drag_info_ref.current_y = drag_info_ref.start_y + y;
         match &drag_info_ref.action {
             DragAction::Move {node, relative_x, relative_y} => {
-                node.borrow_mut().x = drag_info_ref.start_x + x - relative_x;
-                node.borrow_mut().y = drag_info_ref.start_y + y - relative_y;
+                node.borrow_mut().x = limit(0.0, (AREA_WIDTH as f64) - 50.0, drag_info_ref.start_x + x - relative_x);
+                node.borrow_mut().y = limit(0.0, (AREA_HEIGHT as f64) - 30.0, drag_info_ref.start_y + y - relative_y);
                 drawing_area.queue_draw();
             }
             DragAction::Connect(global_terminal) => {
