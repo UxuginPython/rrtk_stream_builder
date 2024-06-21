@@ -6,24 +6,18 @@ use gtk4::{Application, ApplicationWindow, cairo, DrawingArea, GestureDrag, glib
 use cairo::Context;
 use glib::clone;
 use std::rc::Rc;
-use std::cell::{Cell, RefCell};
+use std::cell::RefCell;
 #[derive(Clone, Debug)]
-struct DragInfo {
-    start_x: f64,
-    start_y: f64,
-    current_x: f64,
-    current_y: f64,
-    action: DragAction,
-}
-#[derive(Clone, Debug)]
-enum DragAction {
-    Nothing,
+enum DragInfo {
+    Idle,
     Move {
         node: Rc<RefCell<Node>>,
+        start_x: f64,
+        start_y: f64,
         relative_x: f64,
         relative_y: f64,
     },
-    Connect(GlobalTerminal),
+    Connect,
 }
 #[derive(Clone, Debug)]
 enum LocalTerminal {
@@ -32,11 +26,12 @@ enum LocalTerminal {
 }
 #[derive(Clone, Debug)]
 struct GlobalTerminal {
-    node: Rc<RefCell<Node>>,
-    terminal: LocalTerminal,
+    pub node: usize,
+    pub terminal: LocalTerminal,
 }
 #[derive(Clone, Debug)]
 enum Clicked {
+    Nothing,
     Body,
     Terminal(LocalTerminal),
 }
@@ -62,24 +57,24 @@ impl Node {
         context.fill()?;
         Ok(())
     }
-    fn get_clicked(&self, click_x: f64, click_y: f64) -> Option<Clicked> {
+    fn get_clicked(&self, click_x: f64, click_y: f64) -> Clicked {
         if self.x + 10.0 <= click_x
             && click_x <= self.x + 20.0
             && self.y + 10.0 <= click_y
             && click_y <= self.x + 20.0 {
-            return Some(Clicked::Terminal(LocalTerminal::Left(0)));
+            return Clicked::Terminal(LocalTerminal::Left(0));
         } else if self.x + 30.0 <= click_x
             && click_x <= self.x + 40.0
             && self.y + 10.0 <= click_y
             && click_y <= self.x + 20.0 {
-            return Some(Clicked::Terminal(LocalTerminal::Right(0)));
+            return Clicked::Terminal(LocalTerminal::Right(0));
         } else if self.x <= click_x
             && click_x <= self.x + 50.0
             && self.y <= click_y
             && click_y <= self.y + 30.0 {
-            return Some(Clicked::Body);
+            return Clicked::Body;
         }
-        None
+        Clicked::Nothing
     }
 }
 fn main() -> glib::ExitCode {
@@ -100,68 +95,53 @@ fn build_ui(app: &Application) {
     let nodes = Rc::new([
         Rc::new(RefCell::new(Node::new(100.0, 100.0))),
     ]);
-    let drag_info: Rc<Cell<Option<RefCell<DragInfo>>>> = Rc::new(Cell::new(None));
+    let drag_info = Rc::new(RefCell::new(DragInfo::Idle));
     let drawing_area = DrawingArea::builder()
         .content_width(AREA_WIDTH)
         .content_height(AREA_HEIGHT)
         .build();
-    drawing_area.set_draw_func(clone!(@strong nodes => move |_drawing_area: &DrawingArea, context: &Context, _width: i32, _height: i32| {
+    drawing_area.set_draw_func(clone!(@strong drawing_area, @strong nodes => move |drawing_area: &DrawingArea, context: &Context, width: i32, height: i32| {
         for i in &*nodes {
             i.borrow().draw(context).unwrap();
         }
     }));
     let drag = GestureDrag::new();
     let dragging_func = clone!(@strong drawing_area, @strong drag_info => move |gesture: &GestureDrag, x: f64, y: f64| {
-        todo!();
+        match &*drag_info.borrow() {
+            DragInfo::Idle => {}
+            DragInfo::Move {node, start_x, start_y, relative_x, relative_y} => {
+                node.borrow_mut().x = start_x - relative_x + x;
+                node.borrow_mut().y = start_y - relative_y + y;
+                drawing_area.queue_draw();
+            }
+            DragInfo::Connect => {
+                todo!();
+            }
+        }
     });
     drag.connect_drag_end(clone!(@strong drag_info, @strong dragging_func => move |gesture: &GestureDrag, width: f64, height: f64| {
-        todo!();
+        dragging_func(gesture, width, height);
+        *drag_info.borrow_mut() = DragInfo::Idle;
     }));
     drag.connect_drag_update(dragging_func);
-    drag.connect_drag_begin(clone!(@strong drawing_area, @strong nodes, @strong drag_info => move |gesture: &GestureDrag, x: f64, y: f64| {
+    drag.connect_drag_begin(clone!(@strong drawing_area, @strong nodes => move |gesture: &GestureDrag, x: f64, y: f64| {
         for i in &*nodes {
-            let i_ref = i.borrow();
-            match i_ref.get_clicked(x, y) {
-                None => {}
-                Some(clicked) => match clicked {
-                    Clicked::Body => {
-                        drag_info.set(Some(RefCell::new(DragInfo {
-                            start_x: x,
-                            start_y: y,
-                            current_x: x,
-                            current_y: y,
-                            action: DragAction::Move {
-                                node: Rc::clone(&i),
-                                relative_x: x - i_ref.x,
-                                relative_y: y - i_ref.y,
-                            }
-                        })));
-                        return;
+            match i.borrow().get_clicked(x, y) {
+                Clicked::Nothing => {}
+                Clicked::Body => {
+                    *drag_info.borrow_mut() = DragInfo::Move {
+                        node: Rc::clone(i),
+                        start_x: x,
+                        start_y: y,
+                        relative_x: x - i.borrow().x,
+                        relative_y: y - i.borrow().y,
                     }
-                    Clicked::Terminal(local_terminal) => {
-                        let global_terminal = GlobalTerminal {
-                            node: Rc::clone(&i),
-                            terminal: local_terminal,
-                        };
-                        drag_info.set(Some(RefCell::new(DragInfo {
-                            start_x: x,
-                            start_y: y,
-                            current_x: x,
-                            current_y: y,
-                            action: DragAction::Connect(global_terminal),
-                        })));
-                        return;
-                    }
+                }
+                Clicked::Terminal(local_terminal) => {
+                    todo!();
                 }
             }
         }
-        drag_info.set(Some(RefCell::new(DragInfo {
-            start_x: x,
-            start_y: y,
-            current_x: x,
-            current_y: y,
-            action: DragAction::Nothing,
-        })));
     }));
     drawing_area.add_controller(drag);
     let window = ApplicationWindow::builder()
