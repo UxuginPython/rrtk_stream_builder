@@ -112,7 +112,16 @@ fn build_ui(app: &Application) {
     }));
     let drag = GestureDrag::new();
     let dragging_func = clone!(@strong drawing_area, @strong drag_info => move |gesture: &GestureDrag, x: f64, y: f64| {
-        todo!();
+        let drag_info_rfcl = drag_info.get().expect("drag_info is always Some when dragging_func is being called");
+        let drag_info_ref = drag_info_rfcl.borrow_mut();
+        drag_info_ref.current_x = drag_info_ref.start_x + x;
+        drag_info_ref.current_y = drag_info_ref.start_y + y;
+        match drag_info_ref.action {
+            DragAction::Move {node, relative_x, relative_y} => {
+                todo!();
+            }
+            DragAction::Connect(global_terminal) => {}
+        }
     });
     drag.connect_drag_end(clone!(@strong drag_info, @strong dragging_func => move |gesture: &GestureDrag, width: f64, height: f64| {
         todo!();
