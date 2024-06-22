@@ -177,8 +177,14 @@ fn build_ui(app: &Application) {
         drag_info_ref.current_y = drag_info_ref.start_y + y;
         match &drag_info_ref.action {
             DragAction::Move {node, relative_x, relative_y} => {
+                let max_terminals = if node.borrow().in_terms >= node.borrow().out_terms {
+                    node.borrow().in_terms
+                } else {
+                    node.borrow().out_terms
+                };
+                let height = (20 * max_terminals) as f64 + 10.0;
                 node.borrow_mut().x = limit(0.0, (AREA_WIDTH as f64) - 50.0, drag_info_ref.start_x + x - relative_x);
-                node.borrow_mut().y = limit(0.0, (AREA_HEIGHT as f64) - 30.0, drag_info_ref.start_y + y - relative_y);
+                node.borrow_mut().y = limit(0.0, (AREA_HEIGHT as f64) - height, drag_info_ref.start_y + y - relative_y);
                 drawing_area.queue_draw();
             }
             DragAction::Connect(_global_terminal) => {
