@@ -71,12 +71,12 @@ impl Node {
         if self.x + 10.0 <= click_x
             && click_x <= self.x + 20.0
             && self.y + 10.0 <= click_y
-            && click_y <= self.x + 20.0 {
+            && click_y <= self.y + 20.0 {
             return Some(Clicked::Terminal(LocalTerminal::Left(0)));
         } else if self.x + 30.0 <= click_x
             && click_x <= self.x + 40.0
             && self.y + 10.0 <= click_y
-            && click_y <= self.x + 20.0 {
+            && click_y <= self.y + 20.0 {
             return Some(Clicked::Terminal(LocalTerminal::Right(0)));
         } else if self.x <= click_x
             && click_x <= self.x + 50.0
