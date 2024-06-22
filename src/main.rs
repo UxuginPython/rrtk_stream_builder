@@ -6,7 +6,7 @@ use gtk4::{Application, ApplicationWindow, cairo, DrawingArea, GestureDrag, glib
 use cairo::Context;
 use glib::clone;
 use std::rc::Rc;
-use std::cell::{Cell, RefCell};
+use std::cell::RefCell;
 #[derive(Clone, Debug)]
 struct DragInfo {
     start_x: f64,
@@ -138,7 +138,7 @@ fn build_ui(app: &Application) {
         }
     }));
     let drag = GestureDrag::new();
-    let dragging_func = clone!(@strong drawing_area, @strong drag_info => move |gesture: &GestureDrag, x: f64, y: f64| {
+    let dragging_func = clone!(@strong drawing_area, @strong drag_info => move |_gesture: &GestureDrag, x: f64, y: f64| {
         let borrow = drag_info.borrow();
         let drag_info_rfcl = borrow.as_ref().expect("drag_info is always Some when dragging_func is being called");
         let mut drag_info_ref = drag_info_rfcl.borrow_mut();
@@ -150,7 +150,7 @@ fn build_ui(app: &Application) {
                 node.borrow_mut().y = limit(0.0, (AREA_HEIGHT as f64) - 30.0, drag_info_ref.start_y + y - relative_y);
                 drawing_area.queue_draw();
             }
-            DragAction::Connect(global_terminal) => {
+            DragAction::Connect(_global_terminal) => {
                 drawing_area.queue_draw();
             }
             DragAction::Nothing => {}
@@ -162,7 +162,7 @@ fn build_ui(app: &Application) {
         *drag_info_option = None;
     }));
     drag.connect_drag_update(dragging_func);
-    drag.connect_drag_begin(clone!(@strong drawing_area, @strong nodes, @strong drag_info => move |gesture: &GestureDrag, x: f64, y: f64| {
+    drag.connect_drag_begin(clone!(@strong drawing_area, @strong nodes, @strong drag_info => move |_gesture: &GestureDrag, x: f64, y: f64| {
         for i in &*nodes {
             let i_ref = i.borrow();
             match i_ref.get_clicked(x, y) {
