@@ -1,12 +1,12 @@
 const AREA_WIDTH: i32 = 500;
 const AREA_HEIGHT: i32 = 500;
 const APP_ID: &str = "com.uxugin.gtk-cairo-test";
-use gtk4::prelude::*;
-use gtk4::{Application, ApplicationWindow, cairo, DrawingArea, GestureDrag, glib};
 use cairo::Context;
 use glib::clone;
-use std::rc::Rc;
+use gtk4::prelude::*;
+use gtk4::{cairo, glib, Application, ApplicationWindow, DrawingArea, GestureDrag};
 use std::cell::RefCell;
+use std::rc::Rc;
 #[derive(Clone, Debug)]
 struct DragInfo {
     start_x: f64,
@@ -27,8 +27,8 @@ enum DragAction {
 }
 #[derive(Clone, Debug)]
 enum LocalTerminal {
-    Left(u8),
-    Right(u8),
+    In(u8),
+    Out(u8),
 }
 #[derive(Clone, Debug)]
 struct GlobalTerminal {
@@ -49,47 +49,76 @@ enum Clicked {
 struct Node {
     x: f64,
     y: f64,
+    in_terms: u8,
+    out_terms: u8,
 }
 impl Node {
-    fn new(x: f64, y: f64) -> Self {
+    fn new(x: f64, y: f64, in_terms: u8, out_terms: u8) -> Self {
         Self {
             x: x,
             y: y,
+            in_terms: in_terms,
+            out_terms: out_terms,
         }
     }
     fn draw(&self, context: &Context) -> Result<(), cairo::Error> {
+        let max_terminals = if self.in_terms >= self.out_terms {
+            self.in_terms
+        } else {
+            self.out_terms
+        };
         context.set_source_rgb(0.5, 0.5, 0.5);
-        context.rectangle(self.x, self.y, 50.0, 30.0);
+        context.rectangle(self.x, self.y, 50.0, (20 * max_terminals) as f64 + 10.0);
         context.fill()?;
         context.set_source_rgb(0.0, 0.0, 0.0);
-        context.rectangle(self.x + 10.0, self.y + 10.0, 10.0, 10.0);
-        context.rectangle(self.x + 30.0, self.y + 10.0, 10.0, 10.0);
+        for i in 0..self.in_terms {
+            context.rectangle(self.x + 10.0, self.y + (20 * i) as f64 + 10.0, 10.0, 10.0);
+        }
+        for i in 0..self.out_terms {
+            context.rectangle(self.x + 30.0, self.y + (20 * i) as f64 + 10.0, 10.0, 10.0);
+        }
         context.fill()?;
         Ok(())
     }
     fn get_clicked(&self, click_x: f64, click_y: f64) -> Option<Clicked> {
-        if self.x + 10.0 <= click_x
-            && click_x <= self.x + 20.0
-            && self.y + 10.0 <= click_y
-            && click_y <= self.y + 20.0 {
-            return Some(Clicked::Terminal(LocalTerminal::Left(0)));
-        } else if self.x + 30.0 <= click_x
-            && click_x <= self.x + 40.0
-            && self.y + 10.0 <= click_y
-            && click_y <= self.y + 20.0 {
-            return Some(Clicked::Terminal(LocalTerminal::Right(0)));
-        } else if self.x <= click_x
+        if self.x + 10.0 <= click_x && click_x <= self.x + 20.0 {
+            for i in 0..self.in_terms {
+                if self.y + (20 * i) as f64 + 10.0 <= click_y
+                    && click_y <= self.y + (20 * i) as f64 + 20.0
+                {
+                    return Some(Clicked::Terminal(LocalTerminal::In(i)));
+                }
+            }
+        }
+        if self.x + 50.0 - 20.0 <= click_x && click_x <= self.x + 50.0 - 10.0 {
+            for i in 0..self.out_terms {
+                if self.y + (20 * i) as f64 + 10.0 <= click_y
+                    && click_y <= self.y + (20 * i) as f64 + 20.0
+                {
+                    return Some(Clicked::Terminal(LocalTerminal::Out(i)));
+                }
+            }
+        }
+        let max_terminals = if self.in_terms >= self.out_terms {
+            self.in_terms
+        } else {
+            self.out_terms
+        };
+        if self.x <= click_x
             && click_x <= self.x + 50.0
             && self.y <= click_y
-            && click_y <= self.y + 30.0 {
+            && click_y <= self.y + (20 * max_terminals) as f64 + 10.0
+        {
             return Some(Clicked::Body);
         }
         None
     }
     fn get_terminal_xy(&self, terminal: LocalTerminal) -> (f64, f64) {
         match terminal {
-            LocalTerminal::Left(index) => (self.x + 15.0, self.y + 15.0 + 20.0 * (index as f64)),
-            LocalTerminal::Right(index) => (self.x + 50.0 - 15.0, self.y + 15.0 + 20.0 * (index as f64))
+            LocalTerminal::In(index) => (self.x + 15.0, self.y + 15.0 + 20.0 * (index as f64)),
+            LocalTerminal::Out(index) => {
+                (self.x + 50.0 - 15.0, self.y + 15.0 + 20.0 * (index as f64))
+            }
         }
     }
 }
@@ -109,7 +138,9 @@ fn limit(min: f64, max: f64, num: f64) -> f64 {
 }
 fn build_ui(app: &Application) {
     let nodes = Rc::new([
-        Rc::new(RefCell::new(Node::new(100.0, 100.0))),
+        Rc::new(RefCell::new(Node::new(50.0, 100.0, 1, 1))),
+        Rc::new(RefCell::new(Node::new(200.0, 100.0, 1, 2))),
+        Rc::new(RefCell::new(Node::new(350.0, 100.0, 3, 2))),
     ]);
     let drag_info: Rc<RefCell<Option<RefCell<DragInfo>>>> = Rc::new(RefCell::new(None));
     let drawing_area = DrawingArea::builder()
