@@ -23,22 +23,15 @@ enum DragAction {
         relative_x: f64,
         relative_y: f64,
     },
-    Connect(GlobalTerminal),
+    Connect {
+        node: Rc<RefCell<Node>>,
+        terminal: u8,
+    },
 }
 #[derive(Clone, Debug)]
 enum LocalTerminal {
     In(u8),
     Out(u8),
-}
-#[derive(Clone, Debug)]
-struct GlobalTerminal {
-    node: Rc<RefCell<Node>>,
-    terminal: LocalTerminal,
-}
-impl GlobalTerminal {
-    fn get_xy(&self) -> (f64, f64) {
-        self.node.borrow().get_terminal_xy(self.terminal.clone())
-    }
 }
 #[derive(Clone, Debug)]
 enum Clicked {
@@ -124,13 +117,15 @@ impl Node {
 }
 #[derive(Debug)]
 struct Connection {
-    start: GlobalTerminal,
-    end: GlobalTerminal,
+    start_node: Rc<RefCell<Node>>,
+    start_term: u8, //This will always be an output so no need storing this in the enum.
+    end_node: Rc<RefCell<Node>>,
+    end_term: u8,
 }
 impl Connection {
     fn draw(&self, context: &Context) -> Result<(), cairo::Error> {
-        let (start_x, start_y) = self.start.get_xy();
-        let (end_x, end_y) = self.end.get_xy();
+        let (start_x, start_y) = self.start_node.borrow().get_terminal_xy(LocalTerminal::Out(self.start_term));
+        let (end_x, end_y) = self.end_node.borrow().get_terminal_xy(LocalTerminal::In(self.end_term));
         context.line_to(start_x, start_y);
         context.line_to(end_x, end_y);
         context.stroke()?;
@@ -170,14 +165,13 @@ fn build_ui(app: &Application) {
         for i in &*connections.borrow() {
             i.borrow().draw(context).unwrap();
         }
-        println!("{:?}", connections);
         let borrow = drag_info.borrow();
         match borrow.as_ref() {
             Some(drag_info_rfcl) => {
                 let drag_info_ref = drag_info_rfcl.borrow();
                 match &drag_info_ref.action {
-                    DragAction::Connect(global_terminal) => {
-                        let (start_x, start_y) = global_terminal.get_xy();
+                    DragAction::Connect {node, terminal} => {
+                        let (start_x, start_y) = node.borrow().get_terminal_xy(LocalTerminal::Out(*terminal));
                         context.line_to(start_x, start_y);
                         context.line_to(drag_info_ref.current_x, drag_info_ref.current_y);
                         context.stroke().unwrap();
@@ -207,7 +201,7 @@ fn build_ui(app: &Application) {
                 node.borrow_mut().y = limit(0.0, (AREA_HEIGHT as f64) - height, drag_info_ref.start_y + y - relative_y);
                 drawing_area.queue_draw();
             }
-            DragAction::Connect(_global_terminal) => {
+            DragAction::Connect {..} => {
                 drawing_area.queue_draw();
             }
             DragAction::Nothing => {}
@@ -219,18 +213,22 @@ fn build_ui(app: &Application) {
         {
             let drag_info_ref = drag_info_option.as_ref().expect("drag_info is always Some when a drag is ending").borrow_mut();
             match &drag_info_ref.action {
-                DragAction::Connect(global_terminal) => {
+                DragAction::Connect {node, terminal} => {
                     for i in &*nodes {
                         let i_ref = i.borrow();
                         match i_ref.get_clicked(drag_info_ref.current_x, drag_info_ref.current_y) {
                             Some(Clicked::Terminal(local_terminal)) => {
-                                connections.borrow_mut().push(Rc::new(RefCell::new(Connection {
-                                    start: global_terminal.clone(),
-                                    end: GlobalTerminal {
-                                        node: Rc::clone(&i),
-                                        terminal: local_terminal
+                                match local_terminal {
+                                    LocalTerminal::In(in_terminal) => {
+                                        connections.borrow_mut().push(Rc::new(RefCell::new(Connection {
+                                            start_node: Rc::clone(&node),
+                                            start_term: *terminal,
+                                            end_node: Rc::clone(&i),
+                                            end_term: in_terminal,
+                                        })));
                                     }
-                                })));
+                                    LocalTerminal::Out(_) => {}
+                                }
                             }
                             _ => {}
                         }
@@ -239,7 +237,6 @@ fn build_ui(app: &Application) {
                 _ => {}
             }
         }
-        //let mut drag_info_option = drag_info.borrow_mut();
         *drag_info_option = None;
     }));
     drag.connect_drag_update(dragging_func);
@@ -264,18 +261,22 @@ fn build_ui(app: &Application) {
                         return;
                     }
                     Clicked::Terminal(local_terminal) => {
-                        let global_terminal = GlobalTerminal {
-                            node: Rc::clone(&i),
-                            terminal: local_terminal,
-                        };
-                        *drag_info.borrow_mut() = Some(RefCell::new(DragInfo {
-                            start_x: x,
-                            start_y: y,
-                            current_x: x,
-                            current_y: y,
-                            action: DragAction::Connect(global_terminal),
-                        }));
-                        return;
+                        match local_terminal {
+                            LocalTerminal::Out(terminal) => {
+                                *drag_info.borrow_mut() = Some(RefCell::new(DragInfo {
+                                    start_x: x,
+                                    start_y: y,
+                                    current_x: x,
+                                    current_y: y,
+                                    action: DragAction::Connect {
+                                        node: Rc::clone(&i),
+                                        terminal: terminal,
+                                    },
+                                }));
+                                return;
+                            }
+                            LocalTerminal::In(_) => {}
+                        }
                     }
                 }
             }
