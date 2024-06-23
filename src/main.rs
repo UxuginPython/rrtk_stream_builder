@@ -23,15 +23,32 @@ enum DragAction {
         relative_x: f64,
         relative_y: f64,
     },
-    Connect {
-        node: Rc<RefCell<Node>>,
-        terminal: u8,
-    },
+    Connect(GlobalOut),
 }
 #[derive(Clone, Debug)]
 enum LocalTerminal {
     In(u8),
     Out(u8),
+}
+#[derive(Clone, Debug)]
+struct GlobalOut {
+    node: Rc<RefCell<Node>>,
+    terminal: u8,
+}
+impl GlobalOut {
+    fn get_xy(&self) -> (f64, f64) {
+        self.node.borrow().get_terminal_xy(LocalTerminal::Out(self.terminal))
+    }
+}
+#[derive(Clone, Debug)]
+struct GlobalIn {
+    node: Rc<RefCell<Node>>,
+    terminal: u8,
+}
+impl GlobalIn {
+    fn get_xy(&self) -> (f64, f64) {
+        self.node.borrow().get_terminal_xy(LocalTerminal::In(self.terminal))
+    }
 }
 #[derive(Clone, Debug)]
 enum Clicked {
@@ -117,15 +134,13 @@ impl Node {
 }
 #[derive(Debug)]
 struct Connection {
-    start_node: Rc<RefCell<Node>>,
-    start_term: u8, //This will always be an output so no need storing this in the enum.
-    end_node: Rc<RefCell<Node>>,
-    end_term: u8,
+    start: GlobalOut,
+    end: GlobalIn,
 }
 impl Connection {
     fn draw(&self, context: &Context) -> Result<(), cairo::Error> {
-        let (start_x, start_y) = self.start_node.borrow().get_terminal_xy(LocalTerminal::Out(self.start_term));
-        let (end_x, end_y) = self.end_node.borrow().get_terminal_xy(LocalTerminal::In(self.end_term));
+        let (start_x, start_y) = self.start.get_xy();
+        let (end_x, end_y) = self.end.get_xy();
         context.line_to(start_x, start_y);
         context.line_to(end_x, end_y);
         context.stroke()?;
@@ -170,8 +185,10 @@ fn build_ui(app: &Application) {
             Some(drag_info_rfcl) => {
                 let drag_info_ref = drag_info_rfcl.borrow();
                 match &drag_info_ref.action {
-                    DragAction::Connect {node, terminal} => {
-                        let (start_x, start_y) = node.borrow().get_terminal_xy(LocalTerminal::Out(*terminal));
+                    DragAction::Connect(global_out) => {
+                        let node = &global_out.node;
+                        let terminal = global_out.terminal;
+                        let (start_x, start_y) = node.borrow().get_terminal_xy(LocalTerminal::Out(terminal));
                         context.line_to(start_x, start_y);
                         context.line_to(drag_info_ref.current_x, drag_info_ref.current_y);
                         context.stroke().unwrap();
@@ -213,7 +230,9 @@ fn build_ui(app: &Application) {
         {
             let drag_info_ref = drag_info_option.as_ref().expect("drag_info is always Some when a drag is ending").borrow_mut();
             match &drag_info_ref.action {
-                DragAction::Connect {node, terminal} => {
+                DragAction::Connect(global_out) => {
+                    let node = &global_out.node;
+                    let terminal = global_out.terminal;
                     for i in &*nodes {
                         let i_ref = i.borrow();
                         match i_ref.get_clicked(drag_info_ref.current_x, drag_info_ref.current_y) {
@@ -221,10 +240,14 @@ fn build_ui(app: &Application) {
                                 match local_terminal {
                                     LocalTerminal::In(in_terminal) => {
                                         connections.borrow_mut().push(Rc::new(RefCell::new(Connection {
-                                            start_node: Rc::clone(&node),
-                                            start_term: *terminal,
-                                            end_node: Rc::clone(&i),
-                                            end_term: in_terminal,
+                                            start: GlobalOut {
+                                                node: Rc::clone(&node),
+                                                terminal: terminal,
+                                            },
+                                            end: GlobalIn {
+                                                node: Rc::clone(&i),
+                                                terminal: in_terminal,
+                                            },
                                         })));
                                     }
                                     LocalTerminal::Out(_) => {}
@@ -268,10 +291,10 @@ fn build_ui(app: &Application) {
                                     start_y: y,
                                     current_x: x,
                                     current_y: y,
-                                    action: DragAction::Connect {
+                                    action: DragAction::Connect(GlobalOut {
                                         node: Rc::clone(&i),
                                         terminal: terminal,
-                                    },
+                                    }),
                                 }));
                                 return;
                             }
