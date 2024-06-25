@@ -23,31 +23,12 @@ enum DragAction {
         relative_x: f64,
         relative_y: f64,
     },
-    Connect(GlobalOut),
+    Connect(Rc<RefCell<Node>>),
 }
 #[derive(Clone, Debug)]
 enum LocalTerminal {
-    In(u8),
+    In(usize),
     Out,
-}
-#[derive(Clone, Debug)]
-struct GlobalOut {
-    node: Rc<RefCell<Node>>,
-}
-impl GlobalOut {
-    fn get_xy(&self) -> (f64, f64) {
-        self.node.borrow().get_terminal_xy(LocalTerminal::Out)
-    }
-}
-#[derive(Clone, Debug)]
-struct GlobalIn {
-    node: Rc<RefCell<Node>>,
-    terminal: u8,
-}
-impl GlobalIn {
-    fn get_xy(&self) -> (f64, f64) {
-        self.node.borrow().get_terminal_xy(LocalTerminal::In(self.terminal))
-    }
 }
 #[derive(Clone, Debug)]
 enum Clicked {
@@ -58,7 +39,7 @@ enum Clicked {
 struct Node {
     x: f64,
     y: f64,
-    in_nodes: Vec<Option<Rc<Node>>>,
+    in_nodes: Vec<Option<Rc<RefCell<Node>>>>,
 }
 impl Node {
     fn new(x: f64, y: f64, in_node_count: usize) -> Self {
@@ -72,6 +53,9 @@ impl Node {
             in_nodes: in_nodes,
         }
     }
+    fn connect(&mut self, index: usize, node: Rc<RefCell<Node>>) {
+        self.in_nodes[index] = Some(node);
+    }
     fn draw(&self, context: &Context) -> Result<(), cairo::Error> {
         context.set_source_rgb(0.5, 0.5, 0.5);
         context.rectangle(self.x, self.y, 50.0, 20.0 * self.in_nodes.len() as f64 + 10.0);
@@ -84,13 +68,28 @@ impl Node {
         context.fill()?;
         Ok(())
     }
+    fn draw_connections(&self, context: &Context) -> Result<(), cairo::Error> {
+        context.set_source_rgb(0.0, 0.0, 0.0);
+        for (i, other) in self.in_nodes.clone().into_iter().enumerate() {
+            match other {
+                Some(other) => {
+                    context.line_to(self.x + 15.0, self.y + 20.0 * i as f64 + 15.0);
+                    let (other_x, other_y) = other.borrow().get_terminal_xy(LocalTerminal::Out);
+                    context.line_to(other_x, other_y);
+                    context.stroke()?;
+                }
+                None => {}
+            }
+        }
+        Ok(())
+    }
     fn get_clicked(&self, click_x: f64, click_y: f64) -> Option<Clicked> {
         if self.x + 10.0 <= click_x && click_x <= self.x + 20.0 {
             for i in 0..self.in_nodes.len() {
                 if self.y + 20.0 * i as f64 + 10.0 <= click_y
                     && click_y <= self.y + 20.0 * i as f64 + 20.0
                 {
-                    return Some(Clicked::Terminal(LocalTerminal::In(i as u8)));
+                    return Some(Clicked::Terminal(LocalTerminal::In(i)));
                 }
             }
         }
@@ -117,21 +116,6 @@ impl Node {
         }
     }
 }
-#[derive(Debug)]
-struct Connection {
-    start: GlobalOut,
-    end: GlobalIn,
-}
-impl Connection {
-    fn draw(&self, context: &Context) -> Result<(), cairo::Error> {
-        let (start_x, start_y) = self.start.get_xy();
-        let (end_x, end_y) = self.end.get_xy();
-        context.line_to(start_x, start_y);
-        context.line_to(end_x, end_y);
-        context.stroke()?;
-        Ok(())
-    }
-}
 fn main() -> glib::ExitCode {
     let app = Application::builder().application_id(APP_ID).build();
     app.connect_activate(build_ui);
@@ -152,26 +136,24 @@ fn build_ui(app: &Application) {
         Rc::new(RefCell::new(Node::new(200.0, 100.0, 2))),
         Rc::new(RefCell::new(Node::new(350.0, 100.0, 2))),
     ]);
-    let connections: Rc<RefCell<Vec<Rc<RefCell<Connection>>>>> = Rc::new(RefCell::new(Vec::new()));
     let drag_info: Rc<RefCell<Option<RefCell<DragInfo>>>> = Rc::new(RefCell::new(None));
     let drawing_area = DrawingArea::builder()
         .content_width(AREA_WIDTH)
         .content_height(AREA_HEIGHT)
         .build();
-    drawing_area.set_draw_func(clone!(@strong nodes, @strong drag_info, @strong connections => move |_drawing_area: &DrawingArea, context: &Context, _width: i32, _height: i32| {
+    drawing_area.set_draw_func(clone!(@strong nodes, @strong drag_info => move |_drawing_area: &DrawingArea, context: &Context, _width: i32, _height: i32| {
         for i in &*nodes {
             i.borrow().draw(context).unwrap();
         }
-        for i in &*connections.borrow() {
-            i.borrow().draw(context).unwrap();
+        for i in &*nodes {
+            i.borrow().draw_connections(context).unwrap();
         }
         let borrow = drag_info.borrow();
         match borrow.as_ref() {
             Some(drag_info_rfcl) => {
                 let drag_info_ref = drag_info_rfcl.borrow();
                 match &drag_info_ref.action {
-                    DragAction::Connect(global_out) => {
-                        let node = &global_out.node;
+                    DragAction::Connect(node) => {
                         let (start_x, start_y) = node.borrow().get_terminal_xy(LocalTerminal::Out);
                         context.line_to(start_x, start_y);
                         context.line_to(drag_info_ref.current_x, drag_info_ref.current_y);
@@ -203,29 +185,20 @@ fn build_ui(app: &Application) {
             DragAction::Nothing => {}
         }
     });
-    drag.connect_drag_end(clone!(@strong drag_info, @strong dragging_func, @strong nodes, @strong connections => move |gesture: &GestureDrag, x: f64, y: f64| {
+    drag.connect_drag_end(clone!(@strong drag_info, @strong dragging_func, @strong nodes => move |gesture: &GestureDrag, x: f64, y: f64| {
         dragging_func(gesture, x, y);
         let mut drag_info_option = drag_info.borrow_mut();
         {
             let drag_info_ref = drag_info_option.as_ref().expect("drag_info is always Some when a drag is ending").borrow_mut();
             match &drag_info_ref.action {
-                DragAction::Connect(global_out) => {
-                    let node = &global_out.node;
+                DragAction::Connect(node) => {
                     for i in &*nodes {
-                        let i_ref = i.borrow();
+                        let mut i_ref = i.borrow_mut();
                         match i_ref.get_clicked(drag_info_ref.current_x, drag_info_ref.current_y) {
                             Some(Clicked::Terminal(local_terminal)) => {
                                 match local_terminal {
                                     LocalTerminal::In(in_terminal) => {
-                                        connections.borrow_mut().push(Rc::new(RefCell::new(Connection {
-                                            start: GlobalOut {
-                                                node: Rc::clone(&node),
-                                            },
-                                            end: GlobalIn {
-                                                node: Rc::clone(&i),
-                                                terminal: in_terminal,
-                                            },
-                                        })));
+                                        i_ref.connect(in_terminal, Rc::clone(&node));
                                     }
                                     LocalTerminal::Out => {}
                                 }
@@ -268,9 +241,7 @@ fn build_ui(app: &Application) {
                                     start_y: y,
                                     current_x: x,
                                     current_y: y,
-                                    action: DragAction::Connect(GlobalOut {
-                                        node: Rc::clone(&i),
-                                    }),
+                                    action: DragAction::Connect(Rc::clone(&i)),
                                 }));
                                 return;
                             }
