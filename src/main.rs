@@ -28,16 +28,15 @@ enum DragAction {
 #[derive(Clone, Debug)]
 enum LocalTerminal {
     In(u8),
-    Out(u8),
+    Out,
 }
 #[derive(Clone, Debug)]
 struct GlobalOut {
     node: Rc<RefCell<Node>>,
-    terminal: u8,
 }
 impl GlobalOut {
     fn get_xy(&self) -> (f64, f64) {
-        self.node.borrow().get_terminal_xy(LocalTerminal::Out(self.terminal))
+        self.node.borrow().get_terminal_xy(LocalTerminal::Out)
     }
 }
 #[derive(Clone, Debug)]
@@ -59,65 +58,53 @@ enum Clicked {
 struct Node {
     x: f64,
     y: f64,
-    in_terms: u8,
-    out_terms: u8,
+    in_nodes: Vec<Option<Rc<Node>>>,
 }
 impl Node {
-    fn new(x: f64, y: f64, in_terms: u8, out_terms: u8) -> Self {
+    fn new(x: f64, y: f64, in_node_count: usize) -> Self {
+        let mut in_nodes = Vec::with_capacity(in_node_count);
+        for _ in 0..in_node_count {
+            in_nodes.push(None);
+        }
         Self {
             x: x,
             y: y,
-            in_terms: in_terms,
-            out_terms: out_terms,
+            in_nodes: in_nodes,
         }
     }
     fn draw(&self, context: &Context) -> Result<(), cairo::Error> {
-        let max_terminals = if self.in_terms >= self.out_terms {
-            self.in_terms
-        } else {
-            self.out_terms
-        };
         context.set_source_rgb(0.5, 0.5, 0.5);
-        context.rectangle(self.x, self.y, 50.0, (20 * max_terminals) as f64 + 10.0);
+        context.rectangle(self.x, self.y, 50.0, 20.0 * self.in_nodes.len() as f64 + 10.0);
         context.fill()?;
         context.set_source_rgb(0.0, 0.0, 0.0);
-        for i in 0..self.in_terms {
+        for i in 0..self.in_nodes.len() {
             context.rectangle(self.x + 10.0, self.y + (20 * i) as f64 + 10.0, 10.0, 10.0);
         }
-        for i in 0..self.out_terms {
-            context.rectangle(self.x + 30.0, self.y + (20 * i) as f64 + 10.0, 10.0, 10.0);
-        }
+        context.rectangle(self.x + 30.0, self.y + 10.0, 10.0, 10.0);
         context.fill()?;
         Ok(())
     }
     fn get_clicked(&self, click_x: f64, click_y: f64) -> Option<Clicked> {
         if self.x + 10.0 <= click_x && click_x <= self.x + 20.0 {
-            for i in 0..self.in_terms {
-                if self.y + (20 * i) as f64 + 10.0 <= click_y
-                    && click_y <= self.y + (20 * i) as f64 + 20.0
+            for i in 0..self.in_nodes.len() {
+                if self.y + 20.0 * i as f64 + 10.0 <= click_y
+                    && click_y <= self.y + 20.0 * i as f64 + 20.0
                 {
-                    return Some(Clicked::Terminal(LocalTerminal::In(i)));
+                    return Some(Clicked::Terminal(LocalTerminal::In(i as u8)));
                 }
             }
         }
-        if self.x + 50.0 - 20.0 <= click_x && click_x <= self.x + 50.0 - 10.0 {
-            for i in 0..self.out_terms {
-                if self.y + (20 * i) as f64 + 10.0 <= click_y
-                    && click_y <= self.y + (20 * i) as f64 + 20.0
-                {
-                    return Some(Clicked::Terminal(LocalTerminal::Out(i)));
-                }
-            }
+        if self.x + 50.0 - 20.0 <= click_x
+            && click_x <= self.x + 50.0 - 10.0
+            && self.y + 10.0 <= click_y
+            && click_y <= self.y + 20.0
+        {
+            return Some(Clicked::Terminal(LocalTerminal::Out));
         }
-        let max_terminals = if self.in_terms >= self.out_terms {
-            self.in_terms
-        } else {
-            self.out_terms
-        };
         if self.x <= click_x
             && click_x <= self.x + 50.0
             && self.y <= click_y
-            && click_y <= self.y + (20 * max_terminals) as f64 + 10.0
+            && click_y <= self.y + 20.0 * self.in_nodes.len() as f64 + 10.0
         {
             return Some(Clicked::Body);
         }
@@ -126,9 +113,7 @@ impl Node {
     fn get_terminal_xy(&self, terminal: LocalTerminal) -> (f64, f64) {
         match terminal {
             LocalTerminal::In(index) => (self.x + 15.0, self.y + 15.0 + 20.0 * (index as f64)),
-            LocalTerminal::Out(index) => {
-                (self.x + 50.0 - 15.0, self.y + 15.0 + 20.0 * (index as f64))
-            }
+            LocalTerminal::Out => (self.x + 50.0 - 15.0, self.y + 15.0),
         }
     }
 }
@@ -163,9 +148,9 @@ fn limit(min: f64, max: f64, num: f64) -> f64 {
 }
 fn build_ui(app: &Application) {
     let nodes = Rc::new(vec![
-        Rc::new(RefCell::new(Node::new(50.0, 100.0, 1, 1))),
-        Rc::new(RefCell::new(Node::new(200.0, 100.0, 2, 1))),
-        Rc::new(RefCell::new(Node::new(350.0, 100.0, 3, 2))),
+        Rc::new(RefCell::new(Node::new(50.0, 100.0, 1))),
+        Rc::new(RefCell::new(Node::new(200.0, 100.0, 2))),
+        Rc::new(RefCell::new(Node::new(350.0, 100.0, 2))),
     ]);
     let connections: Rc<RefCell<Vec<Rc<RefCell<Connection>>>>> = Rc::new(RefCell::new(Vec::new()));
     let drag_info: Rc<RefCell<Option<RefCell<DragInfo>>>> = Rc::new(RefCell::new(None));
@@ -187,8 +172,7 @@ fn build_ui(app: &Application) {
                 match &drag_info_ref.action {
                     DragAction::Connect(global_out) => {
                         let node = &global_out.node;
-                        let terminal = global_out.terminal;
-                        let (start_x, start_y) = node.borrow().get_terminal_xy(LocalTerminal::Out(terminal));
+                        let (start_x, start_y) = node.borrow().get_terminal_xy(LocalTerminal::Out);
                         context.line_to(start_x, start_y);
                         context.line_to(drag_info_ref.current_x, drag_info_ref.current_y);
                         context.stroke().unwrap();
@@ -208,12 +192,7 @@ fn build_ui(app: &Application) {
         drag_info_ref.current_y = drag_info_ref.start_y + y;
         match &drag_info_ref.action {
             DragAction::Move {node, relative_x, relative_y} => {
-                let max_terminals = if node.borrow().in_terms >= node.borrow().out_terms {
-                    node.borrow().in_terms
-                } else {
-                    node.borrow().out_terms
-                };
-                let height = (20 * max_terminals) as f64 + 10.0;
+                let height = 20.0 * node.borrow().in_nodes.len() as f64 + 10.0;
                 node.borrow_mut().x = limit(0.0, (AREA_WIDTH as f64) - 50.0, drag_info_ref.start_x + x - relative_x);
                 node.borrow_mut().y = limit(0.0, (AREA_HEIGHT as f64) - height, drag_info_ref.start_y + y - relative_y);
                 drawing_area.queue_draw();
@@ -232,7 +211,6 @@ fn build_ui(app: &Application) {
             match &drag_info_ref.action {
                 DragAction::Connect(global_out) => {
                     let node = &global_out.node;
-                    let terminal = global_out.terminal;
                     for i in &*nodes {
                         let i_ref = i.borrow();
                         match i_ref.get_clicked(drag_info_ref.current_x, drag_info_ref.current_y) {
@@ -242,7 +220,6 @@ fn build_ui(app: &Application) {
                                         connections.borrow_mut().push(Rc::new(RefCell::new(Connection {
                                             start: GlobalOut {
                                                 node: Rc::clone(&node),
-                                                terminal: terminal,
                                             },
                                             end: GlobalIn {
                                                 node: Rc::clone(&i),
@@ -250,7 +227,7 @@ fn build_ui(app: &Application) {
                                             },
                                         })));
                                     }
-                                    LocalTerminal::Out(_) => {}
+                                    LocalTerminal::Out => {}
                                 }
                             }
                             _ => {}
@@ -285,7 +262,7 @@ fn build_ui(app: &Application) {
                     }
                     Clicked::Terminal(local_terminal) => {
                         match local_terminal {
-                            LocalTerminal::Out(terminal) => {
+                            LocalTerminal::Out => {
                                 *drag_info.borrow_mut() = Some(RefCell::new(DragInfo {
                                     start_x: x,
                                     start_y: y,
@@ -293,7 +270,6 @@ fn build_ui(app: &Application) {
                                     current_y: y,
                                     action: DragAction::Connect(GlobalOut {
                                         node: Rc::clone(&i),
-                                        terminal: terminal,
                                     }),
                                 }));
                                 return;
