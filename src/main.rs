@@ -40,6 +40,7 @@ struct Node {
     x: f64,
     y: f64,
     in_nodes: Vec<Option<Rc<RefCell<Node>>>>,
+    converted: Option<Rc<CodeGenNode>>,
 }
 impl Node {
     fn new(x: f64, y: f64, in_node_count: usize) -> Self {
@@ -51,6 +52,7 @@ impl Node {
             x: x,
             y: y,
             in_nodes: in_nodes,
+            converted: None,
         }
     }
     fn connect(&mut self, index: usize, node: Rc<RefCell<Node>>) {
@@ -116,6 +118,57 @@ impl Node {
         }
     }
 }
+#[derive(Clone, Debug)]
+struct CodeGenNode {
+    index: u16,
+    in_nodes: Vec<Option<Rc<CodeGenNode>>>,
+}
+fn prep_code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Vec<Rc<CodeGenNode>> {
+    let mut output = Vec::with_capacity(nodes.len());
+    while output.len() < nodes.len() {
+        for i in &nodes {
+            let mut i_ref = i.borrow_mut();
+            match i_ref.converted {
+                Some(_) => {}
+                None => {
+                    let mut convertible = true;
+                    let mut index = 0;
+                    let mut converted_ins = Vec::new();
+                    'j: for j in &i_ref.in_nodes {
+                        match j {
+                            Some(in_node) => {
+                                match &in_node.borrow().converted {
+                                    None => {
+                                        convertible = false;
+                                        break 'j;
+                                    }
+                                    Some(converted) => {
+                                        if converted.index + 1 > index {
+                                            index = converted.index + 1;
+                                        }
+                                        converted_ins.push(Some(Rc::clone(&converted)));
+                                    }
+                                }
+                            }
+                            None => {
+                                converted_ins.push(None);
+                            }
+                        }
+                    }
+                    if convertible {
+                        let converted = Rc::new(CodeGenNode {
+                            index: index,
+                            in_nodes: converted_ins,
+                        });
+                        i_ref.converted = Some(Rc::clone(&converted));
+                        output.push(converted);
+                    }
+                }
+            }
+        }
+    }
+    output
+}
 fn main() -> glib::ExitCode {
     let app = Application::builder().application_id(APP_ID).build();
     app.connect_activate(build_ui);
@@ -131,11 +184,11 @@ fn limit(min: f64, max: f64, num: f64) -> f64 {
     output
 }
 fn build_ui(app: &Application) {
-    let nodes = Rc::new(vec![
+    let nodes = vec![
         Rc::new(RefCell::new(Node::new(50.0, 100.0, 1))),
         Rc::new(RefCell::new(Node::new(200.0, 100.0, 2))),
         Rc::new(RefCell::new(Node::new(350.0, 100.0, 2))),
-    ]);
+    ];
     let drag_info: Rc<RefCell<Option<RefCell<DragInfo>>>> = Rc::new(RefCell::new(None));
     let drawing_area = DrawingArea::builder()
         .content_width(AREA_WIDTH)
@@ -164,6 +217,12 @@ fn build_ui(app: &Application) {
             }
             None => {}
         }
+        for i in &nodes {
+            i.borrow_mut().converted = None;
+        }
+        let prepped = prep_code_gen(nodes.clone());
+        println!("{:?}", prepped);
+        print!("\n");
     }));
     let drag = GestureDrag::new();
     let dragging_func = clone!(@strong drawing_area, @strong drag_info => move |_gesture: &GestureDrag, x: f64, y: f64| {
