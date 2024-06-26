@@ -5,7 +5,7 @@ use cairo::Context;
 use glib::clone;
 use gtk4::prelude::*;
 use gtk4::{cairo, glib, Application, ApplicationWindow, DrawingArea, GestureDrag};
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 #[derive(Clone, Debug)]
 struct DragInfo {
@@ -123,8 +123,14 @@ struct CodeGenNode {
     index: u16,
     in_nodes: Vec<Option<Rc<CodeGenNode>>>,
 }
-fn prep_code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Vec<Rc<CodeGenNode>> {
+#[derive(Clone, Copy, Debug)]
+struct NodeLoopError;
+fn prep_code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<Vec<Rc<CodeGenNode>>, NodeLoopError> {
+    for i in &nodes {
+        i.borrow_mut().converted = None;
+    }
     let mut output = Vec::with_capacity(nodes.len());
+    let mut last_output_len = 0usize;
     while output.len() < nodes.len() {
         for i in &nodes {
             let mut i_ref = i.borrow_mut();
@@ -166,8 +172,13 @@ fn prep_code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Vec<Rc<CodeGenNode>> {
                 }
             }
         }
+        debug_assert!(output.len() >= last_output_len);
+        if output.len() == last_output_len {
+            return Err(NodeLoopError);
+        }
+        last_output_len = output.len();
     }
-    output
+    Ok(output)
 }
 fn main() -> glib::ExitCode {
     let app = Application::builder().application_id(APP_ID).build();
@@ -189,12 +200,13 @@ fn build_ui(app: &Application) {
         Rc::new(RefCell::new(Node::new(200.0, 100.0, 2))),
         Rc::new(RefCell::new(Node::new(350.0, 100.0, 2))),
     ];
+    let code_gen_flag = Rc::new(Cell::new(false));
     let drag_info: Rc<RefCell<Option<RefCell<DragInfo>>>> = Rc::new(RefCell::new(None));
     let drawing_area = DrawingArea::builder()
         .content_width(AREA_WIDTH)
         .content_height(AREA_HEIGHT)
         .build();
-    drawing_area.set_draw_func(clone!(@strong nodes, @strong drag_info => move |_drawing_area: &DrawingArea, context: &Context, _width: i32, _height: i32| {
+    drawing_area.set_draw_func(clone!(@strong nodes, @strong drag_info, @strong code_gen_flag => move |_drawing_area: &DrawingArea, context: &Context, _width: i32, _height: i32| {
         for i in &*nodes {
             i.borrow().draw(context).unwrap();
         }
@@ -217,12 +229,12 @@ fn build_ui(app: &Application) {
             }
             None => {}
         }
-        for i in &nodes {
-            i.borrow_mut().converted = None;
+        if code_gen_flag.get() {
+            let prepped = prep_code_gen(nodes.clone());
+            println!("{:?}", prepped);
+            print!("\n");
+            code_gen_flag.set(false);
         }
-        let prepped = prep_code_gen(nodes.clone());
-        println!("{:?}", prepped);
-        print!("\n");
     }));
     let drag = GestureDrag::new();
     let dragging_func = clone!(@strong drawing_area, @strong drag_info => move |_gesture: &GestureDrag, x: f64, y: f64| {
@@ -244,7 +256,7 @@ fn build_ui(app: &Application) {
             DragAction::Nothing => {}
         }
     });
-    drag.connect_drag_end(clone!(@strong drag_info, @strong dragging_func, @strong nodes => move |gesture: &GestureDrag, x: f64, y: f64| {
+    drag.connect_drag_end(clone!(@strong drag_info, @strong dragging_func, @strong nodes, @strong code_gen_flag => move |gesture: &GestureDrag, x: f64, y: f64| {
         dragging_func(gesture, x, y);
         let mut drag_info_option = drag_info.borrow_mut();
         {
@@ -258,6 +270,7 @@ fn build_ui(app: &Application) {
                                 match local_terminal {
                                     LocalTerminal::In(in_terminal) => {
                                         i_ref.connect(in_terminal, Rc::clone(&node));
+                                        code_gen_flag.set(true);
                                     }
                                     LocalTerminal::Out => {}
                                 }
