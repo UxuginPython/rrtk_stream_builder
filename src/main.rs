@@ -124,10 +124,28 @@ struct CodeGenNode {
     in_nodes: Vec<Option<Rc<RefCell<CodeGenNode>>>>,
     name: Option<String>,
 }
+impl CodeGenNode {
+    fn make_line(&self) -> String {
+        let mut output = String::from(format!("let {} = make_input_getter!(FooStream::new(", self.name.clone().unwrap()));
+        for i in &self.in_nodes {
+            match i {
+                Some(in_node) => {
+                    output.push_str(&format!("Rc::clone(&{}), ", in_node.borrow().name.clone().unwrap()));
+                }
+                None => {
+                    output.push_str("Rc::clone(&change_me), ");
+                }
+            }
+        }
+        output.pop();
+        output.pop();
+        output.push_str("), Foo, E);\n");
+        output
+    }
+}
 #[derive(Clone, Copy, Debug)]
 struct NodeLoopError;
-//This will return `Result<String, NodeLoopError>` eventually.
-fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<Vec<Rc<RefCell<CodeGenNode>>>, NodeLoopError> {
+fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<String, NodeLoopError> {
     for i in &nodes {
         i.borrow_mut().converted = None;
     }
@@ -185,7 +203,11 @@ fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<Vec<Rc<RefCell<CodeGenNode>
     for (i, node) in output.clone().into_iter().enumerate() {
         node.borrow_mut().name = Some(format!("node_{}", i));
     }
-    Ok(output)
+    let mut final_string = String::new();
+    for i in output {
+        final_string.push_str(&i.borrow().make_line());
+    }
+    Ok(final_string)
 }
 fn main() -> glib::ExitCode {
     let app = Application::builder().application_id(APP_ID).build();
@@ -238,7 +260,10 @@ fn build_ui(app: &Application) {
         }
         if code_gen_flag.get() {
             let code = code_gen(nodes.clone());
-            println!("{:?}", code);
+            match code {
+                Ok(code) => println!("{}", code),
+                Err(_) => println!("error"),
+            }
             print!("\n");
             code_gen_flag.set(false);
         }
