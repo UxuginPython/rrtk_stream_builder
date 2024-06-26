@@ -1,5 +1,6 @@
-const AREA_WIDTH: i32 = 500;
-const AREA_HEIGHT: i32 = 500;
+const AREA_WIDTH: i32 = 1000;
+const AREA_HEIGHT: i32 = 1000;
+const NODE_WIDTH: f64 = 200.0;
 const APP_ID: &str = "com.uxugin.gtk-cairo-test";
 use cairo::Context;
 use glib::clone;
@@ -64,13 +65,19 @@ impl Node {
     }
     fn draw(&self, context: &Context) -> Result<(), cairo::Error> {
         context.set_source_rgb(0.5, 0.5, 0.5);
-        context.rectangle(self.x, self.y, 50.0, 20.0 * self.in_nodes.len() as f64 + 10.0);
+        context.rectangle(self.x, self.y, NODE_WIDTH, 20.0 * self.in_nodes.len() as f64 + 10.0);
         context.fill()?;
+        context.select_font_face("Sans", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
+        context.set_font_size(12.0);
+        context.set_source_rgb(0.0, 0.0, 0.0);
+        let extents = context.text_extents(&self.stream_type).unwrap();
+        context.move_to(self.x + NODE_WIDTH / 2.0 - extents.width() / 2.0, self.y + (10.0 + 20.0 * self.in_nodes.len() as f64) / 2.0 + extents.height() / 2.0);
+        context.show_text(&self.stream_type).unwrap();
         context.set_source_rgb(0.0, 0.0, 0.0);
         for i in 0..self.in_nodes.len() {
             context.rectangle(self.x + 10.0, self.y + (20 * i) as f64 + 10.0, 10.0, 10.0);
         }
-        context.rectangle(self.x + 30.0, self.y + 10.0, 10.0, 10.0);
+        context.rectangle(self.x + NODE_WIDTH - 20.0, self.y + 10.0, 10.0, 10.0);
         context.fill()?;
         Ok(())
     }
@@ -99,15 +106,15 @@ impl Node {
                 }
             }
         }
-        if self.x + 50.0 - 20.0 <= click_x
-            && click_x <= self.x + 50.0 - 10.0
+        if self.x + NODE_WIDTH - 20.0 <= click_x
+            && click_x <= self.x + NODE_WIDTH - 10.0
             && self.y + 10.0 <= click_y
             && click_y <= self.y + 20.0
         {
             return Some(Clicked::Terminal(LocalTerminal::Out));
         }
         if self.x <= click_x
-            && click_x <= self.x + 50.0
+            && click_x <= self.x + NODE_WIDTH
             && self.y <= click_y
             && click_y <= self.y + 20.0 * self.in_nodes.len() as f64 + 10.0
         {
@@ -118,7 +125,7 @@ impl Node {
     fn get_terminal_xy(&self, terminal: LocalTerminal) -> (f64, f64) {
         match terminal {
             LocalTerminal::In(index) => (self.x + 15.0, self.y + 15.0 + 20.0 * (index as f64)),
-            LocalTerminal::Out => (self.x + 50.0 - 15.0, self.y + 15.0),
+            LocalTerminal::Out => (self.x + NODE_WIDTH - 15.0, self.y + 15.0),
         }
     }
 }
@@ -272,7 +279,6 @@ fn build_ui(app: &Application) {
                 Ok(code) => println!("{}", code),
                 Err(_) => println!("error"),
             }
-            print!("\n");
             code_gen_flag.set(false);
         }
     }));
@@ -286,7 +292,7 @@ fn build_ui(app: &Application) {
         match &drag_info_ref.action {
             DragAction::Move {node, relative_x, relative_y} => {
                 let height = 20.0 * node.borrow().in_nodes.len() as f64 + 10.0;
-                node.borrow_mut().x = limit(0.0, (AREA_WIDTH as f64) - 50.0, drag_info_ref.start_x + x - relative_x);
+                node.borrow_mut().x = limit(0.0, (AREA_WIDTH as f64) - NODE_WIDTH, drag_info_ref.start_x + x - relative_x);
                 node.borrow_mut().y = limit(0.0, (AREA_HEIGHT as f64) - height, drag_info_ref.start_y + y - relative_y);
                 drawing_area.queue_draw();
             }
