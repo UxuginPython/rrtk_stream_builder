@@ -40,7 +40,7 @@ struct Node {
     x: f64,
     y: f64,
     in_nodes: Vec<Option<Rc<RefCell<Node>>>>,
-    converted: Option<Rc<CodeGenNode>>,
+    converted: Option<Rc<RefCell<CodeGenNode>>>,
 }
 impl Node {
     fn new(x: f64, y: f64, in_node_count: usize) -> Self {
@@ -121,11 +121,13 @@ impl Node {
 #[derive(Clone, Debug)]
 struct CodeGenNode {
     index: u16,
-    in_nodes: Vec<Option<Rc<CodeGenNode>>>,
+    in_nodes: Vec<Option<Rc<RefCell<CodeGenNode>>>>,
+    name: Option<String>,
 }
 #[derive(Clone, Copy, Debug)]
 struct NodeLoopError;
-fn prep_code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<Vec<Rc<CodeGenNode>>, NodeLoopError> {
+//This will return `Result<String, NodeLoopError>` eventually.
+fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<Vec<Rc<RefCell<CodeGenNode>>>, NodeLoopError> {
     for i in &nodes {
         i.borrow_mut().converted = None;
     }
@@ -149,8 +151,9 @@ fn prep_code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<Vec<Rc<CodeGenNode>>, 
                                         break 'j;
                                     }
                                     Some(converted) => {
-                                        if converted.index + 1 > index {
-                                            index = converted.index + 1;
+                                        let converted_index = converted.borrow().index;
+                                        if converted_index + 1 > index {
+                                            index = converted_index + 1;
                                         }
                                         converted_ins.push(Some(Rc::clone(&converted)));
                                     }
@@ -162,10 +165,11 @@ fn prep_code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<Vec<Rc<CodeGenNode>>, 
                         }
                     }
                     if convertible {
-                        let converted = Rc::new(CodeGenNode {
+                        let converted = Rc::new(RefCell::new(CodeGenNode {
                             index: index,
                             in_nodes: converted_ins,
-                        });
+                            name: None,
+                        }));
                         i_ref.converted = Some(Rc::clone(&converted));
                         output.push(converted);
                     }
@@ -177,6 +181,9 @@ fn prep_code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<Vec<Rc<CodeGenNode>>, 
             return Err(NodeLoopError);
         }
         last_output_len = output.len();
+    }
+    for (i, node) in output.clone().into_iter().enumerate() {
+        node.borrow_mut().name = Some(format!("node_{}", i));
     }
     Ok(output)
 }
@@ -230,8 +237,8 @@ fn build_ui(app: &Application) {
             None => {}
         }
         if code_gen_flag.get() {
-            let prepped = prep_code_gen(nodes.clone());
-            println!("{:?}", prepped);
+            let code = code_gen(nodes.clone());
+            println!("{:?}", code);
             print!("\n");
             code_gen_flag.set(false);
         }
