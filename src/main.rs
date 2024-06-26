@@ -37,18 +37,22 @@ enum Clicked {
 }
 #[derive(Clone, Debug)]
 struct Node {
+    stream_type: String,
+    output_type: String,
     x: f64,
     y: f64,
     in_nodes: Vec<Option<Rc<RefCell<Node>>>>,
     converted: Option<Rc<RefCell<CodeGenNode>>>,
 }
 impl Node {
-    fn new(x: f64, y: f64, in_node_count: usize) -> Self {
+    fn new(stream_type: String, output_type: String, x: f64, y: f64, in_node_count: usize) -> Self {
         let mut in_nodes = Vec::with_capacity(in_node_count);
         for _ in 0..in_node_count {
             in_nodes.push(None);
         }
         Self {
+            stream_type: stream_type,
+            output_type: output_type,
             x: x,
             y: y,
             in_nodes: in_nodes,
@@ -120,13 +124,15 @@ impl Node {
 }
 #[derive(Clone, Debug)]
 struct CodeGenNode {
+    stream_type: String,
+    output_type: String,
     index: u16,
     in_nodes: Vec<Option<Rc<RefCell<CodeGenNode>>>>,
     name: Option<String>,
 }
 impl CodeGenNode {
     fn make_line(&self) -> String {
-        let mut output = String::from(format!("let {} = make_input_getter!(FooStream::new(", self.name.clone().unwrap()));
+        let mut output = String::from(format!("let {} = make_input_getter!({}::new(", self.name.clone().unwrap(), self.stream_type.clone()));
         for i in &self.in_nodes {
             match i {
                 Some(in_node) => {
@@ -139,7 +145,7 @@ impl CodeGenNode {
         }
         output.pop();
         output.pop();
-        output.push_str("), Foo, E);\n");
+        output.push_str(&format!("), {}, E);\n", self.output_type.clone()));
         output
     }
 }
@@ -184,6 +190,8 @@ fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<String, NodeLoopError> {
                     }
                     if convertible {
                         let converted = Rc::new(RefCell::new(CodeGenNode {
+                            stream_type: i_ref.stream_type.clone(),
+                            output_type: i_ref.output_type.clone(),
                             index: index,
                             in_nodes: converted_ins,
                             name: None,
@@ -225,9 +233,9 @@ fn limit(min: f64, max: f64, num: f64) -> f64 {
 }
 fn build_ui(app: &Application) {
     let nodes = vec![
-        Rc::new(RefCell::new(Node::new(50.0, 100.0, 1))),
-        Rc::new(RefCell::new(Node::new(200.0, 100.0, 2))),
-        Rc::new(RefCell::new(Node::new(350.0, 100.0, 2))),
+        Rc::new(RefCell::new(Node::new("LoremStream".to_string(), "Lorem".to_string(), 50.0, 100.0, 1))),
+        Rc::new(RefCell::new(Node::new("IpsumStream".to_string(), "Ipsum".to_string(), 200.0, 100.0, 2))),
+        Rc::new(RefCell::new(Node::new("DolorStream".to_string(), "Dolor".to_string(), 350.0, 100.0, 2))),
     ];
     let code_gen_flag = Rc::new(Cell::new(false));
     let drag_info: Rc<RefCell<Option<RefCell<DragInfo>>>> = Rc::new(RefCell::new(None));
