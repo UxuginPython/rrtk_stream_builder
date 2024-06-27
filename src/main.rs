@@ -3,7 +3,7 @@ const APP_ID: &str = "com.uxugin.gtk-cairo-test";
 use cairo::Context;
 use glib::clone;
 use gtk4::prelude::*;
-use gtk4::{cairo, glib, Application, ApplicationWindow, DrawingArea, GestureDrag, Orientation, TextBuffer, TextView};
+use gtk4::{cairo, glib, Application, ApplicationWindow, Button, DrawingArea, GestureDrag, Orientation, Paned, TextBuffer, TextView};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 #[derive(Clone, Debug)]
@@ -234,11 +234,33 @@ fn build_ui(app: &Application) {
     ];
     let code_gen_flag = Rc::new(Cell::new(true));
     let drag_info: Rc<RefCell<Option<RefCell<DragInfo>>>> = Rc::new(RefCell::new(None));
+    let lorem_button = Button::builder()
+        .label("LoremStream")
+        .build();
+    let ipsum_button = Button::builder()
+        .label("IpsumStream")
+        .build();
+    let dolor_button = Button::builder()
+        .label("DolorStream")
+        .build();
+    let button_box = gtk4::Box::builder()
+        .orientation(Orientation::Vertical)
+        .width_request(500)
+        .build();
+    button_box.append(&lorem_button);
+    button_box.append(&ipsum_button);
+    button_box.append(&dolor_button);
     let drawing_area = DrawingArea::builder()
         .width_request(1000)
         .height_request(1000)
         .hexpand(true)
         .vexpand(true)
+        .build();
+    let node_area = Paned::builder()
+        .orientation(Orientation::Horizontal)
+        .start_child(&button_box)
+        .end_child(&drawing_area)
+        .width_request(1500)
         .build();
     let text_buffer = TextBuffer::new(None);
     let text_view = TextView::builder()
@@ -247,6 +269,11 @@ fn build_ui(app: &Application) {
         .editable(false)
         .width_request(500)
         .hexpand(true)
+        .build();
+    let hor = Paned::builder()
+        .orientation(Orientation::Horizontal)
+        .start_child(&node_area)
+        .end_child(&text_view)
         .build();
     drawing_area.set_draw_func(clone!(@strong nodes, @strong drag_info, @strong code_gen_flag => move |_drawing_area: &DrawingArea, context: &Context, _width: i32, _height: i32| {
         for i in &*nodes {
@@ -375,11 +402,6 @@ fn build_ui(app: &Application) {
         }));
     }));
     drawing_area.add_controller(drag);
-    let hor = gtk4::Paned::builder()
-        .orientation(Orientation::Horizontal)
-        .start_child(&drawing_area)
-        .end_child(&text_view)
-        .build();
     let window = ApplicationWindow::builder()
         .application(app)
         .child(&hor)
