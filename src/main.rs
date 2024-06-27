@@ -3,7 +3,7 @@ const APP_ID: &str = "com.uxugin.gtk-cairo-test";
 use cairo::Context;
 use glib::clone;
 use gtk4::prelude::*;
-use gtk4::{cairo, glib, Application, ApplicationWindow, Button, DrawingArea, GestureDrag, Orientation, Paned, TextBuffer, TextView};
+use gtk4::{cairo, glib, Application, ApplicationWindow, Button, DrawingArea, GestureDrag, Orientation, Paned, ScrolledWindow, TextBuffer, TextView};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 #[derive(Clone, Debug)]
@@ -243,22 +243,27 @@ fn build_ui(app: &Application) {
     let dolor_button = Button::builder()
         .label("DolorStream")
         .build();
+    let male_button = Button::builder()
+        .label("MaleStream")
+        .build();
     let button_box = gtk4::Box::builder()
         .orientation(Orientation::Vertical)
-        .width_request(200)
         .build();
     button_box.append(&lorem_button);
     button_box.append(&ipsum_button);
     button_box.append(&dolor_button);
+    button_box.append(&male_button);
+    let button_box_scroll = ScrolledWindow::builder()
+        .child(&button_box)
+        .width_request(200)
+        .build();
     let drawing_area = DrawingArea::builder()
         .width_request(1000)
         .height_request(1000)
-        .hexpand(true)
-        .vexpand(true)
         .build();
     let node_area = Paned::builder()
         .orientation(Orientation::Horizontal)
-        .start_child(&button_box)
+        .start_child(&button_box_scroll)
         .end_child(&drawing_area)
         .width_request(1200)
         .build();
@@ -267,13 +272,15 @@ fn build_ui(app: &Application) {
         .buffer(&text_buffer)
         .monospace(true)
         .editable(false)
+        .build();
+    let text_view_scroll = ScrolledWindow::builder()
+        .child(&text_view)
         .width_request(700)
-        .hexpand(true)
         .build();
     let hor = Paned::builder()
         .orientation(Orientation::Horizontal)
         .start_child(&node_area)
-        .end_child(&text_view)
+        .end_child(&text_view_scroll)
         .build();
     lorem_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
         nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new("LoremStream".to_string(), "Lorem".to_string(), 0.0, 0.0, 1))));
@@ -287,6 +294,11 @@ fn build_ui(app: &Application) {
     }));
     dolor_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
         nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new("DolorStream".to_string(), "Dolor".to_string(), 0.0, 0.0, 2))));
+        code_gen_flag.set(true);
+        drawing_area.queue_draw();
+    }));
+    male_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new("MaleStream".to_string(), "Male".to_string(), 0.0, 0.0, 0))));
         code_gen_flag.set(true);
         drawing_area.queue_draw();
     }));
