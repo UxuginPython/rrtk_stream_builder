@@ -5,6 +5,7 @@ use glib::clone;
 use gtk4::prelude::*;
 use gtk4::{cairo, glib, Application, ApplicationWindow, Button, DrawingArea, GestureDrag, Orientation, Paned, ScrolledWindow, TextBuffer, TextView};
 use std::cell::{Cell, RefCell};
+use std::cmp::max;
 use std::rc::Rc;
 #[derive(Clone, Debug)]
 struct DragInfo {
@@ -63,13 +64,13 @@ impl Node {
     }
     fn draw(&self, context: &Context) -> Result<(), cairo::Error> {
         context.set_source_rgb(0.5, 0.5, 0.5);
-        context.rectangle(self.x, self.y, NODE_WIDTH, 20.0 * self.in_nodes.len() as f64 + 10.0);
+        context.rectangle(self.x, self.y, NODE_WIDTH, 20.0 * max(1, self.in_nodes.len()) as f64 + 10.0);
         context.fill()?;
         context.select_font_face("Sans", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
         context.set_font_size(12.0);
         context.set_source_rgb(0.0, 0.0, 0.0);
         let extents = context.text_extents(&self.stream_type).unwrap();
-        context.move_to(self.x + NODE_WIDTH / 2.0 - extents.width() / 2.0, self.y + (10.0 + 20.0 * self.in_nodes.len() as f64) / 2.0 + extents.height() / 2.0);
+        context.move_to(self.x + NODE_WIDTH / 2.0 - extents.width() / 2.0, self.y + (10.0 + 20.0 * max(1, self.in_nodes.len()) as f64) / 2.0 + extents.height() / 2.0);
         context.show_text(&self.stream_type).unwrap();
         for i in 0..self.in_nodes.len() {
             context.rectangle(self.x + 10.0, self.y + (20 * i) as f64 + 10.0, 10.0, 10.0);
@@ -113,7 +114,7 @@ impl Node {
         if self.x <= click_x
             && click_x <= self.x + NODE_WIDTH
             && self.y <= click_y
-            && click_y <= self.y + 20.0 * self.in_nodes.len() as f64 + 10.0
+            && click_y <= self.y + 20.0 * max(1, self.in_nodes.len()) as f64 + 10.0
         {
             return Some(Clicked::Body);
         }
@@ -137,18 +138,23 @@ struct CodeGenNode {
 impl CodeGenNode {
     fn make_line(&self) -> String {
         let mut output = String::from(format!("let {} = make_input_getter!({}::new(", self.name.clone().unwrap(), self.stream_type.clone()));
+        let mut pop = false;
         for i in &self.in_nodes {
             match i {
                 Some(in_node) => {
                     output.push_str(&format!("Rc::clone(&{}), ", in_node.borrow().name.clone().unwrap()));
+                    pop = true;
                 }
                 None => {
                     output.push_str("Rc::clone(&change_me), ");
+                    pop = true;
                 }
             }
         }
-        output.pop();
-        output.pop();
+        if pop {
+            output.pop();
+            output.pop();
+        }
         output.push_str(&format!("), {}, E);\n", self.output_type.clone()));
         output
     }
