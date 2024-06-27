@@ -227,11 +227,11 @@ fn main() -> glib::ExitCode {
     app.run()
 }
 fn build_ui(app: &Application) {
-    let nodes = vec![
+    let nodes = Rc::new(RefCell::new(vec![
         Rc::new(RefCell::new(Node::new("LoremStream".to_string(), "Lorem".to_string(), 100.0, 200.0, 1))),
         Rc::new(RefCell::new(Node::new("IpsumStream".to_string(), "Ipsum".to_string(), 400.0, 200.0, 2))),
         Rc::new(RefCell::new(Node::new("DolorStream".to_string(), "Dolor".to_string(), 700.0, 200.0, 2))),
-    ];
+    ]));
     let code_gen_flag = Rc::new(Cell::new(true));
     let drag_info: Rc<RefCell<Option<RefCell<DragInfo>>>> = Rc::new(RefCell::new(None));
     let lorem_button = Button::builder()
@@ -245,7 +245,7 @@ fn build_ui(app: &Application) {
         .build();
     let button_box = gtk4::Box::builder()
         .orientation(Orientation::Vertical)
-        .width_request(500)
+        .width_request(200)
         .build();
     button_box.append(&lorem_button);
     button_box.append(&ipsum_button);
@@ -260,14 +260,14 @@ fn build_ui(app: &Application) {
         .orientation(Orientation::Horizontal)
         .start_child(&button_box)
         .end_child(&drawing_area)
-        .width_request(1500)
+        .width_request(1200)
         .build();
     let text_buffer = TextBuffer::new(None);
     let text_view = TextView::builder()
         .buffer(&text_buffer)
         .monospace(true)
         .editable(false)
-        .width_request(500)
+        .width_request(700)
         .hexpand(true)
         .build();
     let hor = Paned::builder()
@@ -275,11 +275,26 @@ fn build_ui(app: &Application) {
         .start_child(&node_area)
         .end_child(&text_view)
         .build();
+    lorem_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new("LoremStream".to_string(), "Lorem".to_string(), 0.0, 0.0, 1))));
+        code_gen_flag.set(true);
+        drawing_area.queue_draw();
+    }));
+    ipsum_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new("IpsumStream".to_string(), "Ipsum".to_string(), 0.0, 0.0, 2))));
+        code_gen_flag.set(true);
+        drawing_area.queue_draw();
+    }));
+    dolor_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new("DolorStream".to_string(), "Dolor".to_string(), 0.0, 0.0, 2))));
+        code_gen_flag.set(true);
+        drawing_area.queue_draw();
+    }));
     drawing_area.set_draw_func(clone!(@strong nodes, @strong drag_info, @strong code_gen_flag => move |_drawing_area: &DrawingArea, context: &Context, _width: i32, _height: i32| {
-        for i in &*nodes {
+        for i in &*nodes.borrow() {
             i.borrow().draw(context).unwrap();
         }
-        for i in &*nodes {
+        for i in &*nodes.borrow() {
             i.borrow().draw_connections(context).unwrap();
         }
         let borrow = drag_info.borrow();
@@ -299,7 +314,7 @@ fn build_ui(app: &Application) {
             None => {}
         }
         if code_gen_flag.get() {
-            let code = code_gen(nodes.clone());
+            let code = code_gen((*nodes.borrow()).clone());
             match code {
                 Ok(code) => text_buffer.set_text(&code),
                 Err(_) => text_buffer.set_text("error"),
@@ -333,7 +348,7 @@ fn build_ui(app: &Application) {
             let drag_info_ref = drag_info_option.as_ref().expect("drag_info is always Some when a drag is ending").borrow_mut();
             match &drag_info_ref.action {
                 DragAction::Connect(node) => {
-                    for i in &*nodes {
+                    for i in &*nodes.borrow() {
                         let mut i_ref = i.borrow_mut();
                         match i_ref.get_clicked(drag_info_ref.current_x, drag_info_ref.current_y) {
                             Some(Clicked::Terminal(local_terminal)) => {
@@ -356,7 +371,7 @@ fn build_ui(app: &Application) {
     }));
     drag.connect_drag_update(dragging_func);
     drag.connect_drag_begin(clone!(@strong drawing_area, @strong nodes, @strong drag_info => move |_gesture: &GestureDrag, x: f64, y: f64| {
-        for i in &*nodes {
+        for i in &*nodes.borrow() {
             let i_ref = i.borrow();
             match i_ref.get_clicked(x, y) {
                 None => {}
