@@ -5,7 +5,7 @@ const APP_ID: &str = "com.uxugin.gtk-cairo-test";
 use cairo::Context;
 use glib::clone;
 use gtk4::prelude::*;
-use gtk4::{cairo, glib, Application, ApplicationWindow, DrawingArea, GestureDrag};
+use gtk4::{cairo, glib, Application, ApplicationWindow, DrawingArea, GestureDrag, Orientation, TextBuffer, TextView};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 #[derive(Clone, Debug)]
@@ -73,7 +73,6 @@ impl Node {
         let extents = context.text_extents(&self.stream_type).unwrap();
         context.move_to(self.x + NODE_WIDTH / 2.0 - extents.width() / 2.0, self.y + (10.0 + 20.0 * self.in_nodes.len() as f64) / 2.0 + extents.height() / 2.0);
         context.show_text(&self.stream_type).unwrap();
-        context.set_source_rgb(0.0, 0.0, 0.0);
         for i in 0..self.in_nodes.len() {
             context.rectangle(self.x + 10.0, self.y + (20 * i) as f64 + 10.0, 10.0, 10.0);
         }
@@ -240,15 +239,23 @@ fn limit(min: f64, max: f64, num: f64) -> f64 {
 }
 fn build_ui(app: &Application) {
     let nodes = vec![
-        Rc::new(RefCell::new(Node::new("LoremStream".to_string(), "Lorem".to_string(), 50.0, 100.0, 1))),
-        Rc::new(RefCell::new(Node::new("IpsumStream".to_string(), "Ipsum".to_string(), 200.0, 100.0, 2))),
-        Rc::new(RefCell::new(Node::new("DolorStream".to_string(), "Dolor".to_string(), 350.0, 100.0, 2))),
+        Rc::new(RefCell::new(Node::new("LoremStream".to_string(), "Lorem".to_string(), 100.0, 200.0, 1))),
+        Rc::new(RefCell::new(Node::new("IpsumStream".to_string(), "Ipsum".to_string(), 400.0, 200.0, 2))),
+        Rc::new(RefCell::new(Node::new("DolorStream".to_string(), "Dolor".to_string(), 700.0, 200.0, 2))),
     ];
-    let code_gen_flag = Rc::new(Cell::new(false));
+    let code_gen_flag = Rc::new(Cell::new(true));
     let drag_info: Rc<RefCell<Option<RefCell<DragInfo>>>> = Rc::new(RefCell::new(None));
     let drawing_area = DrawingArea::builder()
         .content_width(AREA_WIDTH)
         .content_height(AREA_HEIGHT)
+        .build();
+    let text_buffer = TextBuffer::new(None);
+    let text_view = TextView::builder()
+        .buffer(&text_buffer)
+        .monospace(true)
+        .editable(false)
+        .right_margin(500)
+        .hexpand(true)
         .build();
     drawing_area.set_draw_func(clone!(@strong nodes, @strong drag_info, @strong code_gen_flag => move |_drawing_area: &DrawingArea, context: &Context, _width: i32, _height: i32| {
         for i in &*nodes {
@@ -276,8 +283,8 @@ fn build_ui(app: &Application) {
         if code_gen_flag.get() {
             let code = code_gen(nodes.clone());
             match code {
-                Ok(code) => println!("{}", code),
-                Err(_) => println!("error"),
+                Ok(code) => text_buffer.set_text(&code),
+                Err(_) => text_buffer.set_text("error"),
             }
             code_gen_flag.set(false);
         }
@@ -378,9 +385,14 @@ fn build_ui(app: &Application) {
         }));
     }));
     drawing_area.add_controller(drag);
+    let hor = gtk4::Box::builder()
+        .orientation(Orientation::Horizontal)
+        .build();
+    hor.append(&drawing_area);
+    hor.append(&text_view);
     let window = ApplicationWindow::builder()
         .application(app)
-        .child(&drawing_area)
+        .child(&hor)
         .build();
     window.present();
 }
