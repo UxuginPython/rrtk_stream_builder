@@ -1,5 +1,3 @@
-const AREA_WIDTH: i32 = 1000;
-const AREA_HEIGHT: i32 = 1000;
 const NODE_WIDTH: f64 = 200.0;
 const APP_ID: &str = "com.uxugin.gtk-cairo-test";
 use cairo::Context;
@@ -228,15 +226,6 @@ fn main() -> glib::ExitCode {
     app.connect_activate(build_ui);
     app.run()
 }
-fn limit(min: f64, max: f64, num: f64) -> f64 {
-    let mut output = num;
-    if output < min {
-        output = min;
-    } else if output > max {
-        output = max;
-    }
-    output
-}
 fn build_ui(app: &Application) {
     let nodes = vec![
         Rc::new(RefCell::new(Node::new("LoremStream".to_string(), "Lorem".to_string(), 100.0, 200.0, 1))),
@@ -246,15 +235,17 @@ fn build_ui(app: &Application) {
     let code_gen_flag = Rc::new(Cell::new(true));
     let drag_info: Rc<RefCell<Option<RefCell<DragInfo>>>> = Rc::new(RefCell::new(None));
     let drawing_area = DrawingArea::builder()
-        .content_width(AREA_WIDTH)
-        .content_height(AREA_HEIGHT)
+        .width_request(1000)
+        .height_request(1000)
+        .hexpand(true)
+        .vexpand(true)
         .build();
     let text_buffer = TextBuffer::new(None);
     let text_view = TextView::builder()
         .buffer(&text_buffer)
         .monospace(true)
         .editable(false)
-        .right_margin(500)
+        .width_request(500)
         .hexpand(true)
         .build();
     drawing_area.set_draw_func(clone!(@strong nodes, @strong drag_info, @strong code_gen_flag => move |_drawing_area: &DrawingArea, context: &Context, _width: i32, _height: i32| {
@@ -298,9 +289,8 @@ fn build_ui(app: &Application) {
         drag_info_ref.current_y = drag_info_ref.start_y + y;
         match &drag_info_ref.action {
             DragAction::Move {node, relative_x, relative_y} => {
-                let height = 20.0 * node.borrow().in_nodes.len() as f64 + 10.0;
-                node.borrow_mut().x = limit(0.0, (AREA_WIDTH as f64) - NODE_WIDTH, drag_info_ref.start_x + x - relative_x);
-                node.borrow_mut().y = limit(0.0, (AREA_HEIGHT as f64) - height, drag_info_ref.start_y + y - relative_y);
+                node.borrow_mut().x = drag_info_ref.start_x + x - relative_x;
+                node.borrow_mut().y = drag_info_ref.start_y + y - relative_y;
                 drawing_area.queue_draw();
             }
             DragAction::Connect {..} => {
@@ -385,11 +375,11 @@ fn build_ui(app: &Application) {
         }));
     }));
     drawing_area.add_controller(drag);
-    let hor = gtk4::Box::builder()
+    let hor = gtk4::Paned::builder()
         .orientation(Orientation::Horizontal)
+        .start_child(&drawing_area)
+        .end_child(&text_view)
         .build();
-    hor.append(&drawing_area);
-    hor.append(&text_view);
     let window = ApplicationWindow::builder()
         .application(app)
         .child(&hor)
