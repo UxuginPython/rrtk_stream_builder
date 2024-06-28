@@ -3,7 +3,7 @@ const APP_ID: &str = "com.uxugin.gtk-cairo-test";
 use cairo::Context;
 use glib::clone;
 use gtk4::prelude::*;
-use gtk4::{cairo, glib, Application, ApplicationWindow, Button, DrawingArea, GestureDrag, Orientation, Paned, ScrolledWindow, TextBuffer, TextView};
+use gtk4::{cairo, glib, Application, ApplicationWindow, Button, DrawingArea, GestureClick, GestureDrag, Orientation, Paned, ScrolledWindow, TextBuffer, TextView};
 use std::cell::{Cell, RefCell};
 use std::cmp::max;
 use std::rc::Rc;
@@ -37,6 +37,7 @@ enum Clicked {
 }
 #[derive(Clone, Debug)]
 struct Node {
+    exists: bool,
     stream_type: String,
     output_type: String,
     x: f64,
@@ -51,6 +52,7 @@ impl Node {
             in_nodes.push(None);
         }
         Self {
+            exists: true,
             stream_type: stream_type,
             output_type: output_type,
             x: x,
@@ -162,6 +164,7 @@ impl CodeGenNode {
 #[derive(Clone, Copy, Debug)]
 struct NodeLoopError;
 fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<String, NodeLoopError> {
+    let nodes = get_existing(nodes);
     for i in &nodes {
         i.borrow_mut().converted = None;
     }
@@ -226,6 +229,16 @@ fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<String, NodeLoopError> {
         final_string.push_str(&i.borrow().make_line());
     }
     Ok(final_string)
+}
+fn get_existing(nodes: Vec<Rc<RefCell<Node>>>) -> Vec<Rc<RefCell<Node>>> {
+    let mut output = Vec::with_capacity(nodes.len()); //This will waste a bit of memory in some cases
+                                                  //but save memory management time when pushing.
+    for i in nodes {
+        if i.borrow().exists {
+            output.push(i);
+        }
+    }
+    output
 }
 fn main() -> glib::ExitCode {
     let app = Application::builder().application_id(APP_ID).build();
@@ -309,10 +322,11 @@ fn build_ui(app: &Application) {
         drawing_area.queue_draw();
     }));
     drawing_area.set_draw_func(clone!(@strong nodes, @strong drag_info, @strong code_gen_flag => move |_drawing_area: &DrawingArea, context: &Context, _width: i32, _height: i32| {
-        for i in &*nodes.borrow() {
+        let nodes = get_existing((*nodes.borrow()).clone());
+        for i in &nodes {
             i.borrow().draw(context).unwrap();
         }
-        for i in &*nodes.borrow() {
+        for i in &nodes {
             i.borrow().draw_connections(context).unwrap();
         }
         let borrow = drag_info.borrow();
@@ -332,7 +346,7 @@ fn build_ui(app: &Application) {
             None => {}
         }
         if code_gen_flag.get() {
-            let code = code_gen((*nodes.borrow()).clone());
+            let code = code_gen(nodes);
             match code {
                 Ok(code) => text_buffer.set_text(&code),
                 Err(_) => text_buffer.set_text("error"),
@@ -361,12 +375,13 @@ fn build_ui(app: &Application) {
     });
     drag.connect_drag_end(clone!(@strong drag_info, @strong dragging_func, @strong nodes, @strong code_gen_flag => move |gesture: &GestureDrag, x: f64, y: f64| {
         dragging_func(gesture, x, y);
+        let nodes = get_existing((*nodes.borrow()).clone());
         let mut drag_info_option = drag_info.borrow_mut();
         {
             let drag_info_ref = drag_info_option.as_ref().expect("drag_info is always Some when a drag is ending").borrow_mut();
             match &drag_info_ref.action {
                 DragAction::Connect(node) => {
-                    for i in &*nodes.borrow() {
+                    for i in nodes {
                         let mut i_ref = i.borrow_mut();
                         match i_ref.get_clicked(drag_info_ref.current_x, drag_info_ref.current_y) {
                             Some(Clicked::Terminal(local_terminal)) => {
@@ -389,7 +404,8 @@ fn build_ui(app: &Application) {
     }));
     drag.connect_drag_update(dragging_func);
     drag.connect_drag_begin(clone!(@strong drawing_area, @strong nodes, @strong drag_info => move |_gesture: &GestureDrag, x: f64, y: f64| {
-        for i in &*nodes.borrow() {
+        let nodes = get_existing((*nodes.borrow()).clone());
+        for i in nodes {
             let i_ref = i.borrow();
             match i_ref.get_clicked(x, y) {
                 None => {}
@@ -435,6 +451,45 @@ fn build_ui(app: &Application) {
         }));
     }));
     drawing_area.add_controller(drag);
+    let click = GestureClick::builder()
+        .button(3)
+        .build();
+    click.connect_pressed(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_, _, x, y| {
+        //It will probably be faster here to just run through the nonexistant ones rather than
+        //filtering them out first.
+        for i in &*nodes.borrow() {
+            let mut i_ref = i.borrow_mut();
+            match i_ref.get_clicked(x, y) {
+                Some(_) => {
+                    i_ref.exists = false;
+                    code_gen_flag.set(true);
+                    drawing_area.queue_draw();
+                    //println!("{:#?} has gone the way of Joe Biden's sanity.", i_ref);
+                }
+                None => {}
+            }
+        }
+        for i in &*nodes.borrow() {
+            let mut i_ref = i.borrow_mut();
+            let mut new_i_in_nodes = Vec::<Option<Rc<RefCell<Node>>>>::with_capacity(i_ref.in_nodes.len());
+            for j in &i_ref.in_nodes {
+                match j {
+                    Some(in_node) => {
+                        if in_node.borrow().exists {
+                            new_i_in_nodes.push(j.clone());
+                        } else {
+                            new_i_in_nodes.push(None);
+                        }
+                    }
+                    None => {
+                        new_i_in_nodes.push(None);
+                    }
+                }
+            }
+            i_ref.in_nodes = new_i_in_nodes;
+        }
+    }));
+    drawing_area.add_controller(click);
     let window = ApplicationWindow::builder()
         .application(app)
         .child(&hor)
