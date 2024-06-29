@@ -133,7 +133,6 @@ impl Node {
 struct CodeGenNode {
     stream_type: String,
     output_type: String,
-    index: u16,
     in_nodes: Vec<Option<Rc<RefCell<CodeGenNode>>>>,
     name: Option<String>,
 }
@@ -177,7 +176,6 @@ fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<String, NodeLoopError> {
                 Some(_) => {}
                 None => {
                     let mut convertible = true;
-                    let mut index = 0;
                     let mut converted_ins = Vec::new();
                     'j: for j in &i_ref.in_nodes {
                         match j {
@@ -188,10 +186,6 @@ fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<String, NodeLoopError> {
                                         break 'j;
                                     }
                                     Some(converted) => {
-                                        let converted_index = converted.borrow().index;
-                                        if converted_index + 1 > index {
-                                            index = converted_index + 1;
-                                        }
                                         converted_ins.push(Some(Rc::clone(&converted)));
                                     }
                                 }
@@ -205,7 +199,6 @@ fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<String, NodeLoopError> {
                         let converted = Rc::new(RefCell::new(CodeGenNode {
                             stream_type: i_ref.stream_type.clone(),
                             output_type: i_ref.output_type.clone(),
-                            index: index,
                             in_nodes: converted_ins,
                             name: None,
                         }));
@@ -232,7 +225,7 @@ fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<String, NodeLoopError> {
 }
 fn get_existing(nodes: Vec<Rc<RefCell<Node>>>) -> Vec<Rc<RefCell<Node>>> {
     let mut output = Vec::with_capacity(nodes.len()); //This will waste a bit of memory in some cases
-                                                  //but save memory management time when pushing.
+                                                      //but save memory management time when pushing.
     for i in nodes {
         if i.borrow().exists {
             output.push(i);
