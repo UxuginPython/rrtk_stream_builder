@@ -7,7 +7,7 @@ use gtk4::{cairo, glib, Application, ApplicationWindow, Button, DrawingArea, Ges
 use std::cell::{Cell, RefCell};
 use std::cmp::max;
 use std::rc::Rc;
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 struct DragInfo {
     start_x: f64,
     start_y: f64,
@@ -15,7 +15,7 @@ struct DragInfo {
     current_y: f64,
     action: DragAction,
 }
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 enum DragAction {
     Nothing,
     Move {
@@ -35,18 +35,17 @@ enum Clicked {
     Body,
     Terminal(LocalTerminal),
 }
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 struct Node {
     exists: bool,
     stream_type: String,
-    output_type: String,
     x: f64,
     y: f64,
     in_nodes: Vec<Option<Rc<RefCell<Node>>>>,
-    converted: Option<Rc<RefCell<CodeGenNode>>>,
+    converted: Option<Rc<RefCell<Box<dyn CodeGenNode>>>>,
 }
 impl Node {
-    fn new(stream_type: String, output_type: String, x: f64, y: f64, in_node_count: usize) -> Self {
+    fn new(stream_type: String, x: f64, y: f64, in_node_count: usize) -> Self {
         let mut in_nodes = Vec::with_capacity(in_node_count);
         for _ in 0..in_node_count {
             in_nodes.push(None);
@@ -54,7 +53,6 @@ impl Node {
         Self {
             exists: true,
             stream_type: stream_type,
-            output_type: output_type,
             x: x,
             y: y,
             in_nodes: in_nodes,
@@ -129,21 +127,31 @@ impl Node {
         }
     }
 }
-#[derive(Clone, Debug)]
-struct CodeGenNode {
-    stream_type: String,
-    output_type: String,
-    in_nodes: Vec<Option<Rc<RefCell<CodeGenNode>>>>,
-    name: Option<String>,
+trait CodeGenNode {
+    //Make this panic if it doesn't have one yet.
+    fn get_var_name(&self) -> String;
+    fn set_var_name(&mut self, new_var_name: String);
+    fn make_line(&self) -> String;
 }
-impl CodeGenNode {
+#[derive(Clone)]
+struct ExampleNode {
+    in_nodes: Vec<Option<Rc<RefCell<Box<dyn CodeGenNode>>>>>,
+    var_name: Option<String>,
+}
+impl CodeGenNode for ExampleNode {
+    fn get_var_name(&self) -> String {
+        self.var_name.clone().unwrap()
+    }
+    fn set_var_name(&mut self, new_var_name: String) {
+        self.var_name = Some(new_var_name);
+    }
     fn make_line(&self) -> String {
-        let mut output = String::from(format!("let {} = make_input_getter!({}::new(", self.name.clone().unwrap(), self.stream_type.clone()));
+        let mut output = String::from(format!("let {} = make_input_getter!(ExampleStream::new(", self.get_var_name()));
         let mut pop = false;
         for i in &self.in_nodes {
             match i {
                 Some(in_node) => {
-                    output.push_str(&format!("Rc::clone(&{}), ", in_node.borrow().name.clone().unwrap()));
+                    output.push_str(&format!("Rc::clone(&{}), ", in_node.borrow().get_var_name()));
                     pop = true;
                 }
                 None => {
@@ -156,7 +164,7 @@ impl CodeGenNode {
             output.pop();
             output.pop();
         }
-        output.push_str(&format!("), {}, E);\n", self.output_type.clone()));
+        output.push_str("), Example, E);\n");
         output
     }
 }
@@ -196,12 +204,10 @@ fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<String, NodeLoopError> {
                         }
                     }
                     if convertible {
-                        let converted = Rc::new(RefCell::new(CodeGenNode {
-                            stream_type: i_ref.stream_type.clone(),
-                            output_type: i_ref.output_type.clone(),
+                        let converted = Rc::new(RefCell::new(Box::new(ExampleNode {
                             in_nodes: converted_ins,
-                            name: None,
-                        }));
+                            var_name: None,
+                        }) as Box<dyn CodeGenNode>));
                         i_ref.converted = Some(Rc::clone(&converted));
                         output.push(converted);
                     }
@@ -215,7 +221,7 @@ fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<String, NodeLoopError> {
         last_output_len = output.len();
     }
     for (i, node) in output.clone().into_iter().enumerate() {
-        node.borrow_mut().name = Some(format!("node_{}", i));
+        node.borrow_mut().set_var_name(format!("node_{}", i));
     }
     let mut final_string = String::new();
     for i in output {
@@ -240,9 +246,9 @@ fn main() -> glib::ExitCode {
 }
 fn build_ui(app: &Application) {
     let nodes = Rc::new(RefCell::new(vec![
-        Rc::new(RefCell::new(Node::new("LoremStream".to_string(), "Lorem".to_string(), 100.0, 200.0, 1))),
-        Rc::new(RefCell::new(Node::new("IpsumStream".to_string(), "Ipsum".to_string(), 400.0, 200.0, 2))),
-        Rc::new(RefCell::new(Node::new("DolorStream".to_string(), "Dolor".to_string(), 700.0, 200.0, 2))),
+        Rc::new(RefCell::new(Node::new("LoremStream".to_string(), 100.0, 200.0, 1))),
+        Rc::new(RefCell::new(Node::new("IpsumStream".to_string(), 400.0, 200.0, 2))),
+        Rc::new(RefCell::new(Node::new("DolorStream".to_string(), 700.0, 200.0, 2))),
     ]));
     let code_gen_flag = Rc::new(Cell::new(true));
     let drag_info: Rc<RefCell<Option<RefCell<DragInfo>>>> = Rc::new(RefCell::new(None));
@@ -295,22 +301,22 @@ fn build_ui(app: &Application) {
         .end_child(&text_view_scroll)
         .build();
     lorem_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
-        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new("LoremStream".to_string(), "Lorem".to_string(), 0.0, 0.0, 1))));
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new("LoremStream".to_string(), 0.0, 0.0, 1))));
         code_gen_flag.set(true);
         drawing_area.queue_draw();
     }));
     ipsum_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
-        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new("IpsumStream".to_string(), "Ipsum".to_string(), 0.0, 0.0, 2))));
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new("IpsumStream".to_string(), 0.0, 0.0, 2))));
         code_gen_flag.set(true);
         drawing_area.queue_draw();
     }));
     dolor_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
-        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new("DolorStream".to_string(), "Dolor".to_string(), 0.0, 0.0, 2))));
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new("DolorStream".to_string(), 0.0, 0.0, 2))));
         code_gen_flag.set(true);
         drawing_area.queue_draw();
     }));
     male_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
-        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new("MaleStream".to_string(), "Male".to_string(), 0.0, 0.0, 0))));
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new("MaleStream".to_string(), 0.0, 0.0, 0))));
         code_gen_flag.set(true);
         drawing_area.queue_draw();
     }));
@@ -457,7 +463,6 @@ fn build_ui(app: &Application) {
                     i_ref.exists = false;
                     code_gen_flag.set(true);
                     drawing_area.queue_draw();
-                    //println!("{:#?} has gone the way of Joe Biden's sanity.", i_ref);
                 }
                 None => {}
             }
