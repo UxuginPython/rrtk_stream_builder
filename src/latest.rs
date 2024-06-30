@@ -1,10 +1,10 @@
 use crate::*;
 #[derive(Clone)]
-pub struct ExampleNode {
+pub struct LatestNode {
     pub in_nodes: Vec<Option<Rc<RefCell<Box<dyn CodeGenNode>>>>>,
     pub var_name: Option<String>,
 }
-impl CodeGenNode for ExampleNode {
+impl CodeGenNode for LatestNode {
     fn get_var_name(&self) -> String {
         self.var_name.clone().unwrap()
     }
@@ -12,7 +12,7 @@ impl CodeGenNode for ExampleNode {
         self.var_name = Some(new_var_name);
     }
     fn make_line(&self) -> String {
-        let mut output = String::from(format!("let {} = make_input_getter!(ExampleStream::new(", self.get_var_name()));
+        let mut output = String::from(format!("let {} = make_input_getter!(Latest::new(", self.get_var_name()));
         let mut pop = false;
         for i in &self.in_nodes {
             match i {
@@ -30,7 +30,7 @@ impl CodeGenNode for ExampleNode {
             output.pop();
             output.pop();
         }
-        output.push_str("), Example, E);\n");
+        output.push_str("), ChangeMe, E);\n");
         output
     }
 }

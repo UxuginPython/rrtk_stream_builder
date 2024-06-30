@@ -7,8 +7,10 @@ use gtk4::{cairo, glib, Application, ApplicationWindow, Button, DrawingArea, Ges
 use std::cell::{Cell, RefCell};
 use std::cmp::max;
 use std::rc::Rc;
-mod example;
-use example::*;
+mod constant_getter;
+mod latest;
+use constant_getter::*;
+use latest::*;
 #[derive(Clone)]
 struct DragInfo {
     start_x: f64,
@@ -38,18 +40,37 @@ enum Clicked {
     Terminal(LocalTerminal),
 }
 #[derive(Clone)]
+enum StreamType {
+    ConstantGetter,
+    Latest,
+}
+impl StreamType {
+    fn get_in_node_count(&self) -> usize {
+        match &self {
+            Self::ConstantGetter => 0,
+            Self::Latest => 2,
+        }
+    }
+    fn get_stream_type_string(&self) -> &str {
+        match &self {
+            Self::ConstantGetter => "ConstantGetter",
+            Self::Latest => "Latest",
+        }
+    }
+}
+#[derive(Clone)]
 struct Node {
     exists: bool,
-    stream_type: String,
+    stream_type: StreamType,
     x: f64,
     y: f64,
     in_nodes: Vec<Option<Rc<RefCell<Node>>>>,
     converted: Option<Rc<RefCell<Box<dyn CodeGenNode>>>>,
 }
 impl Node {
-    fn new(stream_type: String, x: f64, y: f64, in_node_count: usize) -> Self {
-        let mut in_nodes = Vec::with_capacity(in_node_count);
-        for _ in 0..in_node_count {
+    fn new(stream_type: StreamType, x: f64, y: f64) -> Self {
+        let mut in_nodes = Vec::with_capacity(stream_type.get_in_node_count());
+        for _ in 0..stream_type.get_in_node_count() {
             in_nodes.push(None);
         }
         Self {
@@ -71,9 +92,9 @@ impl Node {
         context.select_font_face("Sans", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
         context.set_font_size(12.0);
         context.set_source_rgb(0.0, 0.0, 0.0);
-        let extents = context.text_extents(&self.stream_type).unwrap();
+        let extents = context.text_extents(self.stream_type.get_stream_type_string()).unwrap();
         context.move_to(self.x + NODE_WIDTH / 2.0 - extents.width() / 2.0, self.y + (10.0 + 20.0 * max(1, self.in_nodes.len()) as f64) / 2.0 + extents.height() / 2.0);
-        context.show_text(&self.stream_type).unwrap();
+        context.show_text(self.stream_type.get_stream_type_string()).unwrap();
         for i in 0..self.in_nodes.len() {
             context.rectangle(self.x + 10.0, self.y + (20 * i) as f64 + 10.0, 10.0, 10.0);
         }
@@ -171,10 +192,15 @@ fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<String, NodeLoopError> {
                         }
                     }
                     if convertible {
-                        let converted = Rc::new(RefCell::new(Box::new(ExampleNode {
-                            in_nodes: converted_ins,
-                            var_name: None,
-                        }) as Box<dyn CodeGenNode>));
+                        let converted = Rc::new(RefCell::new(match i_ref.stream_type {
+                            StreamType::ConstantGetter => Box::new(ConstantGetterNode {
+                                var_name: None,
+                            }) as Box<dyn CodeGenNode>,
+                            StreamType::Latest => Box::new(LatestNode {
+                                in_nodes: converted_ins,
+                                var_name: None,
+                            }) as Box<dyn CodeGenNode>,
+                        }));
                         i_ref.converted = Some(Rc::clone(&converted));
                         output.push(converted);
                     }
@@ -212,28 +238,37 @@ fn main() -> glib::ExitCode {
     app.run()
 }
 fn build_ui(app: &Application) {
-    /*let nodes = Rc::new(RefCell::new(vec![
-        Rc::new(RefCell::new(Node::new("LoremStream".to_string(), 100.0, 200.0, 1))),
-        Rc::new(RefCell::new(Node::new("IpsumStream".to_string(), 400.0, 200.0, 2))),
-        Rc::new(RefCell::new(Node::new("DolorStream".to_string(), 700.0, 200.0, 2))),
-    ]));*/
     let nodes = Rc::new(RefCell::new(Vec::new()));
     let code_gen_flag = Rc::new(Cell::new(true));
     let drag_info: Rc<RefCell<Option<RefCell<DragInfo>>>> = Rc::new(RefCell::new(None));
-    let example_button = Button::builder()
-        .label("ExampleStream")
+    let drawing_area = DrawingArea::builder()
+        .width_request(1000)
+        .height_request(1000)
         .build();
     let button_box = gtk4::Box::builder()
         .orientation(Orientation::Vertical)
         .build();
-    button_box.append(&example_button);
+    let constant_getter_button = Button::builder()
+        .label("ConstantGetter")
+        .build();
+    constant_getter_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::ConstantGetter, 0.0, 0.0))));
+        code_gen_flag.set(true);
+        drawing_area.queue_draw();
+    }));
+    button_box.append(&constant_getter_button);
+    let latest_button = Button::builder()
+        .label("Latest")
+        .build();
+    latest_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::Latest, 0.0, 0.0))));
+        code_gen_flag.set(true);
+        drawing_area.queue_draw();
+    }));
+    button_box.append(&latest_button);
     let button_box_scroll = ScrolledWindow::builder()
         .child(&button_box)
         .width_request(200)
-        .build();
-    let drawing_area = DrawingArea::builder()
-        .width_request(1000)
-        .height_request(1000)
         .build();
     let node_area = Paned::builder()
         .orientation(Orientation::Horizontal)
@@ -256,11 +291,6 @@ fn build_ui(app: &Application) {
         .start_child(&node_area)
         .end_child(&text_view_scroll)
         .build();
-    example_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
-        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new("ExampleStream".to_string(), 0.0, 0.0, 2))));
-        code_gen_flag.set(true);
-        drawing_area.queue_draw();
-    }));
     drawing_area.set_draw_func(clone!(@strong nodes, @strong drag_info, @strong code_gen_flag => move |_drawing_area: &DrawingArea, context: &Context, _width: i32, _height: i32| {
         let nodes = get_existing((*nodes.borrow()).clone());
         for i in &nodes {
