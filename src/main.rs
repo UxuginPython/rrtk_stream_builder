@@ -7,6 +7,8 @@ use gtk4::{cairo, glib, Application, ApplicationWindow, Button, DrawingArea, Ges
 use std::cell::{Cell, RefCell};
 use std::cmp::max;
 use std::rc::Rc;
+mod example;
+use example::*;
 #[derive(Clone)]
 struct DragInfo {
     start_x: f64,
@@ -133,41 +135,6 @@ trait CodeGenNode {
     fn set_var_name(&mut self, new_var_name: String);
     fn make_line(&self) -> String;
 }
-#[derive(Clone)]
-struct ExampleNode {
-    in_nodes: Vec<Option<Rc<RefCell<Box<dyn CodeGenNode>>>>>,
-    var_name: Option<String>,
-}
-impl CodeGenNode for ExampleNode {
-    fn get_var_name(&self) -> String {
-        self.var_name.clone().unwrap()
-    }
-    fn set_var_name(&mut self, new_var_name: String) {
-        self.var_name = Some(new_var_name);
-    }
-    fn make_line(&self) -> String {
-        let mut output = String::from(format!("let {} = make_input_getter!(ExampleStream::new(", self.get_var_name()));
-        let mut pop = false;
-        for i in &self.in_nodes {
-            match i {
-                Some(in_node) => {
-                    output.push_str(&format!("Rc::clone(&{}), ", in_node.borrow().get_var_name()));
-                    pop = true;
-                }
-                None => {
-                    output.push_str("Rc::clone(&change_me), ");
-                    pop = true;
-                }
-            }
-        }
-        if pop {
-            output.pop();
-            output.pop();
-        }
-        output.push_str("), Example, E);\n");
-        output
-    }
-}
 #[derive(Clone, Copy, Debug)]
 struct NodeLoopError;
 fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<String, NodeLoopError> {
@@ -245,32 +212,21 @@ fn main() -> glib::ExitCode {
     app.run()
 }
 fn build_ui(app: &Application) {
-    let nodes = Rc::new(RefCell::new(vec![
+    /*let nodes = Rc::new(RefCell::new(vec![
         Rc::new(RefCell::new(Node::new("LoremStream".to_string(), 100.0, 200.0, 1))),
         Rc::new(RefCell::new(Node::new("IpsumStream".to_string(), 400.0, 200.0, 2))),
         Rc::new(RefCell::new(Node::new("DolorStream".to_string(), 700.0, 200.0, 2))),
-    ]));
+    ]));*/
+    let nodes = Rc::new(RefCell::new(Vec::new()));
     let code_gen_flag = Rc::new(Cell::new(true));
     let drag_info: Rc<RefCell<Option<RefCell<DragInfo>>>> = Rc::new(RefCell::new(None));
-    let lorem_button = Button::builder()
-        .label("LoremStream")
-        .build();
-    let ipsum_button = Button::builder()
-        .label("IpsumStream")
-        .build();
-    let dolor_button = Button::builder()
-        .label("DolorStream")
-        .build();
-    let male_button = Button::builder()
-        .label("MaleStream")
+    let example_button = Button::builder()
+        .label("ExampleStream")
         .build();
     let button_box = gtk4::Box::builder()
         .orientation(Orientation::Vertical)
         .build();
-    button_box.append(&lorem_button);
-    button_box.append(&ipsum_button);
-    button_box.append(&dolor_button);
-    button_box.append(&male_button);
+    button_box.append(&example_button);
     let button_box_scroll = ScrolledWindow::builder()
         .child(&button_box)
         .width_request(200)
@@ -300,23 +256,8 @@ fn build_ui(app: &Application) {
         .start_child(&node_area)
         .end_child(&text_view_scroll)
         .build();
-    lorem_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
-        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new("LoremStream".to_string(), 0.0, 0.0, 1))));
-        code_gen_flag.set(true);
-        drawing_area.queue_draw();
-    }));
-    ipsum_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
-        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new("IpsumStream".to_string(), 0.0, 0.0, 2))));
-        code_gen_flag.set(true);
-        drawing_area.queue_draw();
-    }));
-    dolor_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
-        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new("DolorStream".to_string(), 0.0, 0.0, 2))));
-        code_gen_flag.set(true);
-        drawing_area.queue_draw();
-    }));
-    male_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
-        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new("MaleStream".to_string(), 0.0, 0.0, 0))));
+    example_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new("ExampleStream".to_string(), 0.0, 0.0, 2))));
         code_gen_flag.set(true);
         drawing_area.queue_draw();
     }));
