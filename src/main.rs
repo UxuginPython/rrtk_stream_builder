@@ -1,5 +1,5 @@
 const NODE_WIDTH: f64 = 200.0;
-const APP_ID: &str = "com.uxugin.gtk-cairo-test";
+const APP_ID: &str = "com.uxugin.rrtk_stream_builder";
 use cairo::Context;
 use glib::clone;
 use gtk4::prelude::*;
@@ -9,8 +9,14 @@ use std::cmp::max;
 use std::rc::Rc;
 mod constant_getter;
 mod latest;
+mod pid_controller_stream;
+mod ewma_stream;
+mod moving_average_stream;
 use constant_getter::*;
 use latest::*;
+use pid_controller_stream::*;
+use ewma_stream::*;
+use moving_average_stream::*;
 #[derive(Clone)]
 struct DragInfo {
     start_x: f64,
@@ -43,18 +49,27 @@ enum Clicked {
 enum StreamType {
     ConstantGetter,
     Latest,
+    PIDControllerStream,
+    EWMAStream,
+    MovingAverageStream,
 }
 impl StreamType {
     fn get_in_node_count(&self) -> usize {
         match &self {
             Self::ConstantGetter => 0,
             Self::Latest => 2,
+            Self::PIDControllerStream => 1,
+            Self::EWMAStream => 1,
+            Self::MovingAverageStream => 1,
         }
     }
     fn get_stream_type_string(&self) -> &str {
         match &self {
             Self::ConstantGetter => "ConstantGetter",
             Self::Latest => "Latest",
+            Self::PIDControllerStream  => "PIDControllerStream",
+            Self::EWMAStream => "EWMAStream",
+            Self::MovingAverageStream => "MovingAverageStream",
         }
     }
 }
@@ -200,6 +215,18 @@ fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<String, NodeLoopError> {
                                 in_nodes: converted_ins,
                                 var_name: None,
                             }) as Box<dyn CodeGenNode>,
+                            StreamType::PIDControllerStream => Box::new(PIDControllerStreamNode {
+                                in_node: converted_ins[0].clone(),
+                                var_name: None,
+                            }) as Box<dyn CodeGenNode>,
+                            StreamType::EWMAStream => Box::new(EWMAStreamNode {
+                                in_node: converted_ins[0].clone(),
+                                var_name: None,
+                            }) as Box<dyn CodeGenNode>,
+                            StreamType::MovingAverageStream => Box::new(MovingAverageStreamNode {
+                                in_node: converted_ins[0].clone(),
+                                var_name: None,
+                            }) as Box<dyn CodeGenNode>,
                         }));
                         i_ref.converted = Some(Rc::clone(&converted));
                         output.push(converted);
@@ -266,6 +293,33 @@ fn build_ui(app: &Application) {
         drawing_area.queue_draw();
     }));
     button_box.append(&latest_button);
+    let pid_controller_stream_button = Button::builder()
+        .label("PIDControllerStream")
+        .build();
+    pid_controller_stream_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::PIDControllerStream, 0.0, 0.0))));
+        code_gen_flag.set(true);
+        drawing_area.queue_draw();
+    }));
+    button_box.append(&pid_controller_stream_button);
+    let ewma_stream_button = Button::builder()
+        .label("EWMAStream")
+        .build();
+    ewma_stream_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::EWMAStream, 0.0, 0.0))));
+        code_gen_flag.set(true);
+        drawing_area.queue_draw();
+    }));
+    button_box.append(&ewma_stream_button);
+    let moving_average_stream_button = Button::builder()
+        .label("MovingAverageStream")
+        .build();
+    moving_average_stream_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::MovingAverageStream, 0.0, 0.0))));
+        code_gen_flag.set(true);
+        drawing_area.queue_draw();
+    }));
+    button_box.append(&moving_average_stream_button);
     let button_box_scroll = ScrolledWindow::builder()
         .child(&button_box)
         .width_request(200)
@@ -462,6 +516,7 @@ fn build_ui(app: &Application) {
     let window = ApplicationWindow::builder()
         .application(app)
         .child(&hor)
+        .title("RRTK Stream Builder")
         .build();
     window.present();
 }

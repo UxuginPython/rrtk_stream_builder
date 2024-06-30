@@ -1,5 +1,5 @@
 [package]
-name = "gtk-cairo-test"
+name = "rrtk_stream_builder"
 version = "0.1.0"
 edition = "2021"
 

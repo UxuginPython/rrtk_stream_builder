@@ -12,7 +12,7 @@ impl CodeGenNode for LatestNode {
         self.var_name = Some(new_var_name);
     }
     fn make_line(&self) -> String {
-        let mut output = String::from(format!("let {} = make_input_getter!(Latest::new(", self.get_var_name()));
+        let mut output = String::from(format!("let {} = make_input_getter!(Latest::new([", self.get_var_name()));
         let mut pop = false;
         for i in &self.in_nodes {
             match i {
@@ -21,7 +21,7 @@ impl CodeGenNode for LatestNode {
                     pop = true;
                 }
                 None => {
-                    output.push_str("Rc::clone(&change_me), ");
+                    output.push_str("Rc::clone(&input_getter), ");
                     pop = true;
                 }
             }
@@ -30,7 +30,7 @@ impl CodeGenNode for LatestNode {
             output.pop();
             output.pop();
         }
-        output.push_str("), ChangeMe, E);\n");
+        output.push_str("]), G, E);\n");
         output
     }
 }
