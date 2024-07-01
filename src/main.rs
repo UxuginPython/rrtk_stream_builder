@@ -17,6 +17,13 @@ mod none_to_value;
 mod acceleration_to_state;
 mod velocity_to_state;
 mod position_to_state;
+mod sum_stream;
+mod difference_stream;
+mod product_stream;
+mod quotient_stream;
+mod exponent_stream;
+mod derivative_stream;
+mod integral_stream;
 use constant_getter::*;
 use latest::*;
 use pid_controller_stream::*;
@@ -27,6 +34,13 @@ use none_to_value::*;
 use acceleration_to_state::*;
 use velocity_to_state::*;
 use position_to_state::*;
+use sum_stream::*;
+use difference_stream::*;
+use product_stream::*;
+use quotient_stream::*;
+use exponent_stream::*;
+use derivative_stream::*;
+use integral_stream::*;
 #[derive(Clone)]
 struct DragInfo {
     start_x: f64,
@@ -67,6 +81,13 @@ enum StreamType {
     AccelerationToState,
     VelocityToState,
     PositionToState,
+    SumStream,
+    DifferenceStream,
+    ProductStream,
+    QuotientStream,
+    ExponentStream,
+    DerivativeStream,
+    IntegralStream,
 }
 impl StreamType {
     fn get_in_node_count(&self) -> usize {
@@ -81,6 +102,13 @@ impl StreamType {
             Self::AccelerationToState => 1,
             Self::VelocityToState => 1,
             Self::PositionToState => 1,
+            Self::SumStream => 2,
+            Self::DifferenceStream => 2,
+            Self::ProductStream => 2,
+            Self::QuotientStream => 2,
+            Self::ExponentStream => 2,
+            Self::DerivativeStream => 1,
+            Self::IntegralStream => 1,
         }
     }
     fn get_stream_type_string(&self) -> &str {
@@ -95,6 +123,13 @@ impl StreamType {
             Self::AccelerationToState => "AccelerationToState",
             Self::VelocityToState => "VelocityToState",
             Self::PositionToState => "PositionToState",
+            Self::SumStream => "SumStream",
+            Self::DifferenceStream => "DifferenceStream",
+            Self::ProductStream => "ProductStream",
+            Self::QuotientStream => "QuotientStream",
+            Self::ExponentStream => "ExponentStream",
+            Self::DerivativeStream => "DerivativeStream",
+            Self::IntegralStream => "IntegralStream",
         }
     }
 }
@@ -272,6 +307,37 @@ fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<String, NodeLoopError> {
                                 in_node: converted_ins[0].clone(),
                                 var_name: None,
                             }) as Box<dyn CodeGenNode>,
+                            StreamType::SumStream => Box::new(SumStreamNode {
+                                in_nodes: converted_ins,
+                                var_name: None,
+                            }) as Box<dyn CodeGenNode>,
+                            StreamType::DifferenceStream => Box::new(DifferenceStreamNode {
+                                minuend_in_node: converted_ins[0].clone(),
+                                subtrahend_in_node: converted_ins[1].clone(),
+                                var_name: None,
+                            }) as Box<dyn CodeGenNode>,
+                            StreamType::ProductStream => Box::new(ProductStreamNode {
+                                in_nodes: converted_ins,
+                                var_name: None,
+                            }) as Box<dyn CodeGenNode>,
+                            StreamType::QuotientStream => Box::new(QuotientStreamNode {
+                                dividend_in_node: converted_ins[0].clone(),
+                                divisor_in_node: converted_ins[1].clone(),
+                                var_name: None,
+                            }) as Box<dyn CodeGenNode>,
+                            StreamType::ExponentStream => Box::new(ExponentStreamNode {
+                                base_in_node: converted_ins[0].clone(),
+                                exponent_in_node: converted_ins[1].clone(),
+                                var_name: None,
+                            }) as Box<dyn CodeGenNode>,
+                            StreamType::DerivativeStream => Box::new(DerivativeStreamNode {
+                                in_node: converted_ins[0].clone(),
+                                var_name: None,
+                            }) as Box<dyn CodeGenNode>,
+                            StreamType::IntegralStream => Box::new(IntegralStreamNode {
+                                in_node: converted_ins[0].clone(),
+                                var_name: None,
+                            }) as Box<dyn CodeGenNode>,
                         }));
                         i_ref.converted = Some(Rc::clone(&converted));
                         output.push(converted);
@@ -410,6 +476,69 @@ fn build_ui(app: &Application) {
         drawing_area.queue_draw();
     }));
     button_box.append(&position_to_state_button);
+    let sum_stream_button = Button::builder()
+        .label("SumStream")
+        .build();
+    sum_stream_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::SumStream, 0.0, 0.0))));
+        code_gen_flag.set(true);
+        drawing_area.queue_draw();
+    }));
+    button_box.append(&sum_stream_button);
+    let difference_stream_button = Button::builder()
+        .label("DifferenceStream")
+        .build();
+    difference_stream_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::DifferenceStream, 0.0, 0.0))));
+        code_gen_flag.set(true);
+        drawing_area.queue_draw();
+    }));
+    button_box.append(&difference_stream_button);
+    let product_stream_button = Button::builder()
+        .label("ProductStream")
+        .build();
+    product_stream_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::ProductStream, 0.0, 0.0))));
+        code_gen_flag.set(true);
+        drawing_area.queue_draw();
+    }));
+    button_box.append(&product_stream_button);
+    let quotient_stream_button = Button::builder()
+        .label("QuotientStream")
+        .build();
+    quotient_stream_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::QuotientStream, 0.0, 0.0))));
+        code_gen_flag.set(true);
+        drawing_area.queue_draw();
+    }));
+    button_box.append(&quotient_stream_button);
+    let exponent_stream_button = Button::builder()
+        .label("ExponentStream")
+        .build();
+    exponent_stream_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::ExponentStream, 0.0, 0.0))));
+        code_gen_flag.set(true);
+        drawing_area.queue_draw();
+    }));
+    button_box.append(&exponent_stream_button);
+    let derivative_stream_button = Button::builder()
+        .label("DerivativeStream")
+        .build();
+    derivative_stream_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::DerivativeStream, 0.0, 0.0))));
+        code_gen_flag.set(true);
+        drawing_area.queue_draw();
+    }));
+    button_box.append(&derivative_stream_button);
+    let integral_stream_button = Button::builder()
+        .label("IntegralStream")
+        .build();
+    integral_stream_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::IntegralStream, 0.0, 0.0))));
+        code_gen_flag.set(true);
+        drawing_area.queue_draw();
+    }));
+    button_box.append(&integral_stream_button);
     let button_box_scroll = ScrolledWindow::builder()
         .child(&button_box)
         .width_request(200)

@@ -12,7 +12,7 @@ impl CodeGenNode for PIDControllerStreamNode {
         self.var_name = Some(new_var_name);
     }
     fn make_line(&self) -> String {
-        let mut output = String::from(format!("let {} = make_input_getter!(PIDControllerStreamNode::new(Rc::clone(&", self.get_var_name()));
+        let mut output = String::from(format!("let {} = make_input_getter!(PIDControllerStream::new(Rc::clone(&", self.get_var_name()));
         let binding = match &self.in_node {
             Some(in_node) => &in_node.borrow().get_var_name(),
             None => "input_getter",
