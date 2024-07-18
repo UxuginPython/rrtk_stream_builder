@@ -1,46 +1,61 @@
+// SPDX-License-Identifier: LGPL-3.0-only
+/*
+Copyright 2024 UxuginPython on GitHub
+
+     This file is part of RRTK Stream Builder.
+
+    RRTK Stream Builder is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, version 3.
+
+    RRTK Stream Builder is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License along with RRTK Stream Builder. If not, see <https://www.gnu.org/licenses/>.
+*/
 const NODE_WIDTH: f64 = 200.0;
 const APP_ID: &str = "com.uxugin.rrtk_stream_builder";
 use cairo::Context;
 use glib::clone;
 use gtk4::prelude::*;
-use gtk4::{cairo, glib, Application, ApplicationWindow, Button, DrawingArea, GestureClick, GestureDrag, Orientation, Paned, ScrolledWindow, TextBuffer, TextView};
+use gtk4::{
+    cairo, glib, Application, ApplicationWindow, Button, DrawingArea, GestureClick, GestureDrag,
+    Orientation, Paned, ScrolledWindow, TextBuffer, TextView,
+};
 use std::cell::{Cell, RefCell};
 use std::cmp::max;
 use std::rc::Rc;
+mod acceleration_to_state;
 mod constant_getter;
-mod latest;
-mod pid_controller_stream;
+mod derivative_stream;
+mod difference_stream;
 mod ewma_stream;
+mod exponent_stream;
+mod integral_stream;
+mod latest;
 mod moving_average_stream;
 mod none_to_error;
 mod none_to_value;
-mod acceleration_to_state;
-mod velocity_to_state;
+mod pid_controller_stream;
 mod position_to_state;
-mod sum_stream;
-mod difference_stream;
 mod product_stream;
 mod quotient_stream;
-mod exponent_stream;
-mod derivative_stream;
-mod integral_stream;
+mod sum_stream;
+mod velocity_to_state;
+use acceleration_to_state::*;
 use constant_getter::*;
-use latest::*;
-use pid_controller_stream::*;
+use derivative_stream::*;
+use difference_stream::*;
 use ewma_stream::*;
+use exponent_stream::*;
+use integral_stream::*;
+use latest::*;
 use moving_average_stream::*;
 use none_to_error::*;
 use none_to_value::*;
-use acceleration_to_state::*;
-use velocity_to_state::*;
+use pid_controller_stream::*;
 use position_to_state::*;
-use sum_stream::*;
-use difference_stream::*;
 use product_stream::*;
 use quotient_stream::*;
-use exponent_stream::*;
-use derivative_stream::*;
-use integral_stream::*;
+use sum_stream::*;
+use velocity_to_state::*;
 #[derive(Clone)]
 struct DragInfo {
     start_x: f64,
@@ -115,7 +130,7 @@ impl StreamType {
         match &self {
             Self::ConstantGetter => "ConstantGetter",
             Self::Latest => "Latest",
-            Self::PIDControllerStream  => "PIDControllerStream",
+            Self::PIDControllerStream => "PIDControllerStream",
             Self::EWMAStream => "EWMAStream",
             Self::MovingAverageStream => "MovingAverageStream",
             Self::NoneToError => "NoneToError",
@@ -162,14 +177,28 @@ impl Node {
     }
     fn draw(&self, context: &Context) -> Result<(), cairo::Error> {
         context.set_source_rgb(0.5, 0.5, 0.5);
-        context.rectangle(self.x, self.y, NODE_WIDTH, 20.0 * max(1, self.in_nodes.len()) as f64 + 10.0);
+        context.rectangle(
+            self.x,
+            self.y,
+            NODE_WIDTH,
+            20.0 * max(1, self.in_nodes.len()) as f64 + 10.0,
+        );
         context.fill()?;
         context.select_font_face("Sans", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
         context.set_font_size(12.0);
         context.set_source_rgb(0.0, 0.0, 0.0);
-        let extents = context.text_extents(self.stream_type.get_stream_type_string()).unwrap();
-        context.move_to(self.x + NODE_WIDTH / 2.0 - extents.width() / 2.0, self.y + (10.0 + 20.0 * max(1, self.in_nodes.len()) as f64) / 2.0 + extents.height() / 2.0);
-        context.show_text(self.stream_type.get_stream_type_string()).unwrap();
+        let extents = context
+            .text_extents(self.stream_type.get_stream_type_string())
+            .unwrap();
+        context.move_to(
+            self.x + NODE_WIDTH / 2.0 - extents.width() / 2.0,
+            self.y
+                + (10.0 + 20.0 * max(1, self.in_nodes.len()) as f64) / 2.0
+                + extents.height() / 2.0,
+        );
+        context
+            .show_text(self.stream_type.get_stream_type_string())
+            .unwrap();
         for i in 0..self.in_nodes.len() {
             context.rectangle(self.x + 10.0, self.y + (20 * i) as f64 + 10.0, 10.0, 10.0);
         }
@@ -250,17 +279,15 @@ fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<String, NodeLoopError> {
                     let mut converted_ins = Vec::new();
                     'j: for j in &i_ref.in_nodes {
                         match j {
-                            Some(in_node) => {
-                                match &in_node.borrow().converted {
-                                    None => {
-                                        convertible = false;
-                                        break 'j;
-                                    }
-                                    Some(converted) => {
-                                        converted_ins.push(Some(Rc::clone(&converted)));
-                                    }
+                            Some(in_node) => match &in_node.borrow().converted {
+                                None => {
+                                    convertible = false;
+                                    break 'j;
                                 }
-                            }
+                                Some(converted) => {
+                                    converted_ins.push(Some(Rc::clone(&converted)));
+                                }
+                            },
                             None => {
                                 converted_ins.push(None);
                             }
@@ -268,76 +295,93 @@ fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<String, NodeLoopError> {
                     }
                     if convertible {
                         let converted = Rc::new(RefCell::new(match i_ref.stream_type {
-                            StreamType::ConstantGetter => Box::new(ConstantGetterNode {
-                                var_name: None,
-                            }) as Box<dyn CodeGenNode>,
+                            StreamType::ConstantGetter => {
+                                Box::new(ConstantGetterNode { var_name: None })
+                                    as Box<dyn CodeGenNode>
+                            }
                             StreamType::Latest => Box::new(LatestNode {
                                 in_nodes: converted_ins,
                                 var_name: None,
-                            }) as Box<dyn CodeGenNode>,
+                            })
+                                as Box<dyn CodeGenNode>,
                             StreamType::PIDControllerStream => Box::new(PIDControllerStreamNode {
                                 in_node: converted_ins[0].clone(),
                                 var_name: None,
-                            }) as Box<dyn CodeGenNode>,
+                            })
+                                as Box<dyn CodeGenNode>,
                             StreamType::EWMAStream => Box::new(EWMAStreamNode {
                                 in_node: converted_ins[0].clone(),
                                 var_name: None,
-                            }) as Box<dyn CodeGenNode>,
+                            })
+                                as Box<dyn CodeGenNode>,
                             StreamType::MovingAverageStream => Box::new(MovingAverageStreamNode {
                                 in_node: converted_ins[0].clone(),
                                 var_name: None,
-                            }) as Box<dyn CodeGenNode>,
+                            })
+                                as Box<dyn CodeGenNode>,
                             StreamType::NoneToError => Box::new(NoneToErrorNode {
                                 in_node: converted_ins[0].clone(),
                                 var_name: None,
-                            }) as Box<dyn CodeGenNode>,
+                            })
+                                as Box<dyn CodeGenNode>,
                             StreamType::NoneToValue => Box::new(NoneToValueNode {
                                 in_node: converted_ins[0].clone(),
                                 var_name: None,
-                            }) as Box<dyn CodeGenNode>,
+                            })
+                                as Box<dyn CodeGenNode>,
                             StreamType::AccelerationToState => Box::new(AccelerationToStateNode {
                                 in_node: converted_ins[0].clone(),
                                 var_name: None,
-                            }) as Box<dyn CodeGenNode>,
+                            })
+                                as Box<dyn CodeGenNode>,
                             StreamType::VelocityToState => Box::new(VelocityToStateNode {
                                 in_node: converted_ins[0].clone(),
                                 var_name: None,
-                            }) as Box<dyn CodeGenNode>,
+                            })
+                                as Box<dyn CodeGenNode>,
                             StreamType::PositionToState => Box::new(PositionToStateNode {
                                 in_node: converted_ins[0].clone(),
                                 var_name: None,
-                            }) as Box<dyn CodeGenNode>,
+                            })
+                                as Box<dyn CodeGenNode>,
                             StreamType::SumStream => Box::new(SumStreamNode {
                                 in_nodes: converted_ins,
                                 var_name: None,
-                            }) as Box<dyn CodeGenNode>,
+                            })
+                                as Box<dyn CodeGenNode>,
                             StreamType::DifferenceStream => Box::new(DifferenceStreamNode {
                                 minuend_in_node: converted_ins[0].clone(),
                                 subtrahend_in_node: converted_ins[1].clone(),
                                 var_name: None,
-                            }) as Box<dyn CodeGenNode>,
+                            })
+                                as Box<dyn CodeGenNode>,
                             StreamType::ProductStream => Box::new(ProductStreamNode {
                                 in_nodes: converted_ins,
                                 var_name: None,
-                            }) as Box<dyn CodeGenNode>,
+                            })
+                                as Box<dyn CodeGenNode>,
                             StreamType::QuotientStream => Box::new(QuotientStreamNode {
                                 dividend_in_node: converted_ins[0].clone(),
                                 divisor_in_node: converted_ins[1].clone(),
                                 var_name: None,
-                            }) as Box<dyn CodeGenNode>,
+                            })
+                                as Box<dyn CodeGenNode>,
                             StreamType::ExponentStream => Box::new(ExponentStreamNode {
                                 base_in_node: converted_ins[0].clone(),
                                 exponent_in_node: converted_ins[1].clone(),
                                 var_name: None,
-                            }) as Box<dyn CodeGenNode>,
+                            })
+                                as Box<dyn CodeGenNode>,
                             StreamType::DerivativeStream => Box::new(DerivativeStreamNode {
                                 in_node: converted_ins[0].clone(),
                                 var_name: None,
-                            }) as Box<dyn CodeGenNode>,
+                            })
+                                as Box<dyn CodeGenNode>,
                             StreamType::IntegralStream => Box::new(IntegralStreamNode {
                                 in_node: converted_ins[0].clone(),
                                 var_name: None,
-                            }) as Box<dyn CodeGenNode>,
+                            })
+                                as Box<dyn CodeGenNode>,
                         }));
                         i_ref.converted = Some(Rc::clone(&converted));
                         output.push(converted);
@@ -386,153 +430,121 @@ fn build_ui(app: &Application) {
     let button_box = gtk4::Box::builder()
         .orientation(Orientation::Vertical)
         .build();
-    let constant_getter_button = Button::builder()
-        .label("ConstantGetter")
-        .build();
+    let constant_getter_button = Button::builder().label("ConstantGetter").build();
     constant_getter_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
         nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::ConstantGetter, 0.0, 0.0))));
         code_gen_flag.set(true);
         drawing_area.queue_draw();
     }));
     button_box.append(&constant_getter_button);
-    let latest_button = Button::builder()
-        .label("Latest")
-        .build();
-    latest_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
-        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::Latest, 0.0, 0.0))));
-        code_gen_flag.set(true);
-        drawing_area.queue_draw();
-    }));
+    let latest_button = Button::builder().label("Latest").build();
+    latest_button.connect_clicked(
+        clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+            nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::Latest, 0.0, 0.0))));
+            code_gen_flag.set(true);
+            drawing_area.queue_draw();
+        }),
+    );
     button_box.append(&latest_button);
-    let pid_controller_stream_button = Button::builder()
-        .label("PIDControllerStream")
-        .build();
+    let pid_controller_stream_button = Button::builder().label("PIDControllerStream").build();
     pid_controller_stream_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
         nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::PIDControllerStream, 0.0, 0.0))));
         code_gen_flag.set(true);
         drawing_area.queue_draw();
     }));
     button_box.append(&pid_controller_stream_button);
-    let ewma_stream_button = Button::builder()
-        .label("EWMAStream")
-        .build();
+    let ewma_stream_button = Button::builder().label("EWMAStream").build();
     ewma_stream_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
         nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::EWMAStream, 0.0, 0.0))));
         code_gen_flag.set(true);
         drawing_area.queue_draw();
     }));
     button_box.append(&ewma_stream_button);
-    let moving_average_stream_button = Button::builder()
-        .label("MovingAverageStream")
-        .build();
+    let moving_average_stream_button = Button::builder().label("MovingAverageStream").build();
     moving_average_stream_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
         nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::MovingAverageStream, 0.0, 0.0))));
         code_gen_flag.set(true);
         drawing_area.queue_draw();
     }));
     button_box.append(&moving_average_stream_button);
-    let none_to_error_button = Button::builder()
-        .label("NoneToError")
-        .build();
+    let none_to_error_button = Button::builder().label("NoneToError").build();
     none_to_error_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
         nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::NoneToError, 0.0, 0.0))));
         code_gen_flag.set(true);
         drawing_area.queue_draw();
     }));
     button_box.append(&none_to_error_button);
-    let none_to_value_button = Button::builder()
-        .label("NoneToValue")
-        .build();
+    let none_to_value_button = Button::builder().label("NoneToValue").build();
     none_to_value_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
         nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::NoneToValue, 0.0, 0.0))));
         code_gen_flag.set(true);
         drawing_area.queue_draw();
     }));
     button_box.append(&none_to_value_button);
-    let acceleration_to_state_button = Button::builder()
-        .label("AccelerationToState")
-        .build();
+    let acceleration_to_state_button = Button::builder().label("AccelerationToState").build();
     acceleration_to_state_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
         nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::AccelerationToState, 0.0, 0.0))));
         code_gen_flag.set(true);
         drawing_area.queue_draw();
     }));
     button_box.append(&acceleration_to_state_button);
-    let velocity_to_state_button = Button::builder()
-        .label("VelocityToState")
-        .build();
+    let velocity_to_state_button = Button::builder().label("VelocityToState").build();
     velocity_to_state_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
         nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::VelocityToState, 0.0, 0.0))));
         code_gen_flag.set(true);
         drawing_area.queue_draw();
     }));
     button_box.append(&velocity_to_state_button);
-    let position_to_state_button = Button::builder()
-        .label("PositionToState")
-        .build();
+    let position_to_state_button = Button::builder().label("PositionToState").build();
     position_to_state_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
         nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::PositionToState, 0.0, 0.0))));
         code_gen_flag.set(true);
         drawing_area.queue_draw();
     }));
     button_box.append(&position_to_state_button);
-    let sum_stream_button = Button::builder()
-        .label("SumStream")
-        .build();
+    let sum_stream_button = Button::builder().label("SumStream").build();
     sum_stream_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
         nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::SumStream, 0.0, 0.0))));
         code_gen_flag.set(true);
         drawing_area.queue_draw();
     }));
     button_box.append(&sum_stream_button);
-    let difference_stream_button = Button::builder()
-        .label("DifferenceStream")
-        .build();
+    let difference_stream_button = Button::builder().label("DifferenceStream").build();
     difference_stream_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
         nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::DifferenceStream, 0.0, 0.0))));
         code_gen_flag.set(true);
         drawing_area.queue_draw();
     }));
     button_box.append(&difference_stream_button);
-    let product_stream_button = Button::builder()
-        .label("ProductStream")
-        .build();
+    let product_stream_button = Button::builder().label("ProductStream").build();
     product_stream_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
         nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::ProductStream, 0.0, 0.0))));
         code_gen_flag.set(true);
         drawing_area.queue_draw();
     }));
     button_box.append(&product_stream_button);
-    let quotient_stream_button = Button::builder()
-        .label("QuotientStream")
-        .build();
+    let quotient_stream_button = Button::builder().label("QuotientStream").build();
     quotient_stream_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
         nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::QuotientStream, 0.0, 0.0))));
         code_gen_flag.set(true);
         drawing_area.queue_draw();
     }));
     button_box.append(&quotient_stream_button);
-    let exponent_stream_button = Button::builder()
-        .label("ExponentStream")
-        .build();
+    let exponent_stream_button = Button::builder().label("ExponentStream").build();
     exponent_stream_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
         nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::ExponentStream, 0.0, 0.0))));
         code_gen_flag.set(true);
         drawing_area.queue_draw();
     }));
     button_box.append(&exponent_stream_button);
-    let derivative_stream_button = Button::builder()
-        .label("DerivativeStream")
-        .build();
+    let derivative_stream_button = Button::builder().label("DerivativeStream").build();
     derivative_stream_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
         nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::DerivativeStream, 0.0, 0.0))));
         code_gen_flag.set(true);
         drawing_area.queue_draw();
     }));
     button_box.append(&derivative_stream_button);
-    let integral_stream_button = Button::builder()
-        .label("IntegralStream")
-        .build();
+    let integral_stream_button = Button::builder().label("IntegralStream").build();
     integral_stream_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
         nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::IntegralStream, 0.0, 0.0))));
         code_gen_flag.set(true);
@@ -694,9 +706,7 @@ fn build_ui(app: &Application) {
         }));
     }));
     drawing_area.add_controller(drag);
-    let click = GestureClick::builder()
-        .button(3)
-        .build();
+    let click = GestureClick::builder().button(3).build();
     click.connect_pressed(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_, _, x, y| {
         //It will probably be faster here to just run through the nonexistant ones rather than
         //filtering them out first.

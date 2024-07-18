@@ -1,7 +1,13 @@
 [package]
 name = "rrtk_stream_builder"
 version = "0.1.0"
+license = "LGPL-3.0-only"
 edition = "2021"
+authors = ["UxuginPython <uxugin at uxugin dot com>"]
+repository = "https://github.com/UxuginPython/rrtk_stream_builder"
+description = "RRTK Stream Builder"
+keywords = ["robotics", "nodes", "rrtk"]
+categories = ["science::robotics", "development-tools"]
 
 [dependencies]
 gtk4 = { version = "0.8.2", features = ["v4_12"] }
