@@ -25,7 +25,7 @@ impl CodeGenNode for SumStreamNode {
     }
     fn make_line(&self) -> String {
         let mut output = String::from(format!(
-            "let {} = make_input_getter!(SumStream::new([",
+            "let {} = make_input_getter(SumStream::new([",
             self.get_var_name()
         ));
         let mut pop = false;
@@ -48,7 +48,7 @@ impl CodeGenNode for SumStreamNode {
             output.pop();
             output.pop();
         }
-        output.push_str("]), f32, E);\n");
+        output.push_str("]));\n");
         output
     }
 }

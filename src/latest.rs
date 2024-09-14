@@ -25,7 +25,7 @@ impl CodeGenNode for LatestNode {
     }
     fn make_line(&self) -> String {
         let mut output = String::from(format!(
-            "let {} = make_input_getter!(Latest::new([",
+            "let {} = make_input_getter(Latest::new([",
             self.get_var_name()
         ));
         let mut pop = false;
@@ -48,7 +48,7 @@ impl CodeGenNode for LatestNode {
             output.pop();
             output.pop();
         }
-        output.push_str("]), G, E);\n");
+        output.push_str("]));\n");
         output
     }
 }

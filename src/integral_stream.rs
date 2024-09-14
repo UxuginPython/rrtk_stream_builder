@@ -25,7 +25,7 @@ impl CodeGenNode for IntegralStreamNode {
     }
     fn make_line(&self) -> String {
         let mut output = String::from(format!(
-            "let {} = make_input_getter!(IntegralStream::new(Rc::clone(&",
+            "let {} = make_input_getter(IntegralStream::new(Rc::clone(&",
             self.get_var_name()
         ));
         let binding = match &self.in_node {
@@ -33,7 +33,7 @@ impl CodeGenNode for IntegralStreamNode {
             None => "input_getter",
         };
         output.push_str(binding);
-        output.push_str(")), f32, E);\n");
+        output.push_str(")));\n");
         output
     }
 }
