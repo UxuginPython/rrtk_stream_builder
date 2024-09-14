@@ -23,17 +23,34 @@ impl CodeGenNode for VelocityToStateNode {
     fn set_var_name(&mut self, new_var_name: String) {
         self.var_name = Some(new_var_name);
     }
-    fn make_line(&self) -> String {
-        let mut output = String::from(format!(
-            "let {} = make_input_getter!(VelocityToState::new(Rc::clone(&",
-            self.get_var_name()
-        ));
-        let binding = match &self.in_node {
-            Some(in_node) => &in_node.borrow().get_var_name(),
-            None => "input_getter",
-        };
-        output.push_str(binding);
-        output.push_str(")), State, E);\n");
-        output
+    fn make_line(&self, target_version: TargetVersion) -> String {
+        match target_version {
+            TargetVersion::V0_3 => {
+                let mut output = String::from(format!(
+                    "let {} = make_input_getter!(VelocityToState::new(Rc::clone(&",
+                    self.get_var_name()
+                ));
+                let binding = match &self.in_node {
+                    Some(in_node) => &in_node.borrow().get_var_name(),
+                    None => "input_getter",
+                };
+                output.push_str(binding);
+                output.push_str(")), State, E);\n");
+                output
+            }
+            TargetVersion::V0_4 => {
+                let mut output = String::from(format!(
+                    "let {} = make_input_getter!(VelocityToState::new(Rc::clone(&",
+                    self.get_var_name()
+                ));
+                let binding = match &self.in_node {
+                    Some(in_node) => &in_node.borrow().get_var_name(),
+                    None => "input_getter",
+                };
+                output.push_str(binding);
+                output.push_str(")), State, E);\n");
+                output
+            }
+        }
     }
 }

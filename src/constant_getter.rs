@@ -22,10 +22,16 @@ impl CodeGenNode for ConstantGetterNode {
     fn set_var_name(&mut self, new_var_name: String) {
         self.var_name = Some(new_var_name);
     }
-    fn make_line(&self) -> String {
-        String::from(format!(
-            "let {} = make_input_getter!(ConstantGetter::new(time_getter, value), G, E);\n",
-            self.get_var_name()
-        ))
+    fn make_line(&self, target_version: TargetVersion) -> String {
+        match target_version {
+            TargetVersion::V0_3 => String::from(format!(
+                "let {} = make_input_getter!(ConstantGetter::new(time_getter, value), G, E);\n",
+                self.get_var_name()
+            )),
+            TargetVersion::V0_4 => String::from(format!(
+                "let {} = make_input_getter(ConstantGetter::new(time_getter, value));\n",
+                self.get_var_name()
+            )),
+        }
     }
 }

@@ -12,6 +12,7 @@ Copyright 2024 UxuginPython on GitHub
 */
 const NODE_WIDTH: f64 = 200.0;
 const APP_ID: &str = "com.uxugin.rrtk_stream_builder";
+const TARGET_VERSION: TargetVersion = TargetVersion::V0_4;
 use cairo::Context;
 use glib::clone;
 use gtk4::prelude::*;
@@ -254,11 +255,15 @@ impl Node {
         }
     }
 }
+enum TargetVersion {
+    V0_3,
+    V0_4,
+}
 trait CodeGenNode {
     //Make this panic if it doesn't have one yet.
     fn get_var_name(&self) -> String;
     fn set_var_name(&mut self, new_var_name: String);
-    fn make_line(&self) -> String;
+    fn make_line(&self, target_version: TargetVersion) -> String;
 }
 #[derive(Clone, Copy, Debug)]
 struct NodeLoopError;
@@ -400,7 +405,7 @@ fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<String, NodeLoopError> {
     }
     let mut final_string = String::new();
     for i in output {
-        final_string.push_str(&i.borrow().make_line());
+        final_string.push_str(&i.borrow().make_line(TARGET_VERSION));
     }
     Ok(final_string)
 }
