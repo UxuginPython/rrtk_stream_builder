@@ -25,7 +25,7 @@ impl CodeGenNode for MovingAverageStreamNode {
     }
     fn make_line(&self) -> String {
         let mut output = String::from(format!(
-            "let {} = make_input_getter(MovingAverageStream::new(Rc::clone(&",
+            "let {} = make_input_getter!(MovingAverageStream::new(Rc::clone(&",
             self.get_var_name()
         ));
         let binding = match &self.in_node {
@@ -33,7 +33,7 @@ impl CodeGenNode for MovingAverageStreamNode {
             None => "input_getter",
         };
         output.push_str(binding);
-        output.push_str("), window));\n");
+        output.push_str("), window), f32, E);\n");
         output
     }
 }

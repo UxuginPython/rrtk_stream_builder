@@ -26,7 +26,7 @@ impl CodeGenNode for DifferenceStreamNode {
     }
     fn make_line(&self) -> String {
         let mut output = String::from(format!(
-            "let {} = make_input_getter(DifferenceStream::new(Rc::clone(&",
+            "let {} = make_input_getter!(DifferenceStream::new(Rc::clone(&",
             self.get_var_name()
         ));
         let binding = match &self.minuend_in_node {
@@ -40,7 +40,7 @@ impl CodeGenNode for DifferenceStreamNode {
             None => "subtrahend_input_getter",
         };
         output.push_str(binding);
-        output.push_str(")));\n");
+        output.push_str(")), f32, E);\n");
         output
     }
 }
