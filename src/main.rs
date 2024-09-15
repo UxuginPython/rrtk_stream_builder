@@ -571,6 +571,11 @@ fn build_ui(app: &Application) {
         .orientation(Orientation::Vertical)
         .build();
     let target_version_selector = DropDown::from_strings(&VERSIONS);
+    target_version_selector.connect_selected_notify(
+        clone!(@strong target_version_selector => move |_| {
+            println!("{}", target_version_selector.selected());
+        }),
+    );
     output_box.append(&target_version_selector);
     let text_buffer = TextBuffer::new(None);
     let text_view = TextView::builder()
