@@ -12,7 +12,7 @@ Copyright 2024 UxuginPython on GitHub
 */
 const NODE_WIDTH: f64 = 200.0;
 const APP_ID: &str = "com.uxugin.rrtk_stream_builder";
-const TARGET_VERSION: TargetVersion = TargetVersion::V0_4;
+static mut TARGET_VERSION: TargetVersion = TargetVersion::V0_4;
 const VERSIONS: [&str; 2] = ["0.3", "0.4"];
 use cairo::Context;
 use glib::clone;
@@ -58,6 +58,7 @@ use product_stream::*;
 use quotient_stream::*;
 use sum_stream::*;
 use velocity_to_state::*;
+#[derive(Clone, Copy)]
 enum TargetVersion {
     V0_3,
     V0_4,
@@ -406,7 +407,7 @@ fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<String, NodeLoopError> {
     }
     let mut final_string = String::new();
     for i in output {
-        final_string.push_str(&i.borrow().make_line(TARGET_VERSION));
+        final_string.push_str(&i.borrow().make_line(unsafe { TARGET_VERSION }));
     }
     Ok(final_string)
 }
@@ -570,14 +571,27 @@ fn build_ui(app: &Application) {
     let output_box = gtk4::Box::builder()
         .orientation(Orientation::Vertical)
         .build();
+    let text_buffer = TextBuffer::new(None);
     let target_version_selector = DropDown::from_strings(&VERSIONS);
+    target_version_selector.set_selected(1);
     target_version_selector.connect_selected_notify(
-        clone!(@strong target_version_selector => move |_| {
-            println!("{}", target_version_selector.selected());
+        clone!(@strong nodes, @strong target_version_selector, @strong text_buffer => move |_| {
+            unsafe {
+                TARGET_VERSION = match target_version_selector.selected() {
+                    0 => TargetVersion::V0_3,
+                    1 => TargetVersion::V0_4,
+                    _ => panic!("impossible value from target_version_selector"),
+                }
+            }
+            let nodes = get_existing((*nodes.borrow()).clone());
+            let code = code_gen(nodes);
+            match code {
+                Ok(code) => text_buffer.set_text(&code),
+                Err(_) => text_buffer.set_text("error"),
+            }
         }),
     );
     output_box.append(&target_version_selector);
-    let text_buffer = TextBuffer::new(None);
     let text_view = TextView::builder()
         .buffer(&text_buffer)
         .monospace(true) //This doesn't seem to work?
