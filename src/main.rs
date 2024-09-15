@@ -33,6 +33,7 @@ mod exponent_stream;
 mod integral_stream;
 mod latest;
 mod moving_average_stream;
+mod none_getter;
 mod none_to_error;
 mod none_to_value;
 mod pid_controller_stream;
@@ -50,6 +51,7 @@ use exponent_stream::*;
 use integral_stream::*;
 use latest::*;
 use moving_average_stream::*;
+use none_getter::*;
 use none_to_error::*;
 use none_to_value::*;
 use pid_controller_stream::*;
@@ -98,6 +100,7 @@ enum StreamType {
     PIDControllerStream,
     EWMAStream,
     MovingAverageStream,
+    NoneGetter,
     NoneToError,
     NoneToValue,
     AccelerationToState,
@@ -119,6 +122,7 @@ impl StreamType {
             Self::PIDControllerStream => 1,
             Self::EWMAStream => 1,
             Self::MovingAverageStream => 1,
+            Self::NoneGetter => 0,
             Self::NoneToError => 1,
             Self::NoneToValue => 1,
             Self::AccelerationToState => 1,
@@ -140,6 +144,7 @@ impl StreamType {
             Self::PIDControllerStream => "PIDControllerStream",
             Self::EWMAStream => "EWMAStream",
             Self::MovingAverageStream => "MovingAverageStream",
+            Self::NoneGetter => "NoneGetter",
             Self::NoneToError => "NoneToError",
             Self::NoneToValue => "NoneToValue",
             Self::AccelerationToState => "AccelerationToState",
@@ -326,6 +331,7 @@ fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<String, NodeLoopError> {
                                 var_name: None,
                             })
                                 as Box<dyn CodeGenNode>,
+                            StreamType::NoneGetter => Box::new(NoneGetterNode { var_name: None }) as Box<dyn CodeGenNode>,
                             StreamType::NoneToError => Box::new(NoneToErrorNode {
                                 in_node: converted_ins[0].clone(),
                                 var_name: None,
@@ -474,6 +480,13 @@ fn build_ui(app: &Application) {
         drawing_area.queue_draw();
     }));
     button_box.append(&moving_average_stream_button);
+    let none_getter_button = Button::builder().label("NoneGetter").build();
+    none_getter_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::NoneGetter, 0.0, 0.0))));
+        code_gen_flag.set(true);
+        drawing_area.queue_draw();
+    }));
+    button_box.append(&none_getter_button);
     let none_to_error_button = Button::builder().label("NoneToError").build();
     none_to_error_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
         nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::NoneToError, 0.0, 0.0))));
