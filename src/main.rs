@@ -13,12 +13,13 @@ Copyright 2024 UxuginPython on GitHub
 const NODE_WIDTH: f64 = 200.0;
 const APP_ID: &str = "com.uxugin.rrtk_stream_builder";
 const TARGET_VERSION: TargetVersion = TargetVersion::V0_4;
+const VERSIONS: [&str; 2] = ["0.3", "0.4"];
 use cairo::Context;
 use glib::clone;
 use gtk4::prelude::*;
 use gtk4::{
-    cairo, glib, Application, ApplicationWindow, Button, DrawingArea, GestureClick, GestureDrag,
-    Orientation, Paned, ScrolledWindow, TextBuffer, TextView,
+    cairo, glib, Application, ApplicationWindow, Button, DrawingArea, DropDown, GestureClick,
+    GestureDrag, Orientation, Paned, ScrolledWindow, TextBuffer, TextView,
 };
 use std::cell::{Cell, RefCell};
 use std::cmp::max;
@@ -57,6 +58,10 @@ use product_stream::*;
 use quotient_stream::*;
 use sum_stream::*;
 use velocity_to_state::*;
+enum TargetVersion {
+    V0_3,
+    V0_4,
+}
 #[derive(Clone)]
 struct DragInfo {
     start_x: f64,
@@ -254,10 +259,6 @@ impl Node {
             LocalTerminal::Out => (self.x + NODE_WIDTH - 15.0, self.y + 15.0),
         }
     }
-}
-enum TargetVersion {
-    V0_3,
-    V0_4,
 }
 trait CodeGenNode {
     //Make this panic if it doesn't have one yet.
@@ -566,20 +567,27 @@ fn build_ui(app: &Application) {
         .end_child(&drawing_area)
         .width_request(1200)
         .build();
+    let output_box = gtk4::Box::builder()
+        .orientation(Orientation::Vertical)
+        .build();
+    let target_version_selector = DropDown::from_strings(&VERSIONS);
+    output_box.append(&target_version_selector);
     let text_buffer = TextBuffer::new(None);
     let text_view = TextView::builder()
         .buffer(&text_buffer)
-        .monospace(true)
+        .monospace(true) //This doesn't seem to work?
         .editable(false)
+        .vexpand(true)
         .build();
     let text_view_scroll = ScrolledWindow::builder()
         .child(&text_view)
         .width_request(700)
         .build();
+    output_box.append(&text_view_scroll);
     let hor = Paned::builder()
         .orientation(Orientation::Horizontal)
         .start_child(&node_area)
-        .end_child(&text_view_scroll)
+        .end_child(&output_box)
         .build();
     drawing_area.set_draw_func(clone!(@strong nodes, @strong drag_info, @strong code_gen_flag => move |_drawing_area: &DrawingArea, context: &Context, _width: i32, _height: i32| {
         let nodes = get_existing((*nodes.borrow()).clone());
