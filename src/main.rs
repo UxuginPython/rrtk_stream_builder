@@ -25,6 +25,7 @@ use std::cell::{Cell, RefCell};
 use std::cmp::max;
 use std::rc::Rc;
 mod acceleration_to_state;
+mod command_pid;
 mod constant_getter;
 mod derivative_stream;
 mod difference_stream;
@@ -43,6 +44,7 @@ mod quotient_stream;
 mod sum_stream;
 mod velocity_to_state;
 use acceleration_to_state::*;
+use command_pid::*;
 use constant_getter::*;
 use derivative_stream::*;
 use difference_stream::*;
@@ -113,6 +115,7 @@ enum StreamType {
     ExponentStream,
     DerivativeStream,
     IntegralStream,
+    CommandPID,
 }
 impl StreamType {
     fn get_in_node_count(&self) -> usize {
@@ -135,6 +138,7 @@ impl StreamType {
             Self::ExponentStream => 2,
             Self::DerivativeStream => 1,
             Self::IntegralStream => 1,
+            Self::CommandPID => 1,
         }
     }
     fn get_stream_type_string(&self) -> &str {
@@ -157,6 +161,7 @@ impl StreamType {
             Self::ExponentStream => "ExponentStream",
             Self::DerivativeStream => "DerivativeStream",
             Self::IntegralStream => "IntegralStream",
+            Self::CommandPID => "CommandPID",
         }
     }
 }
@@ -395,6 +400,10 @@ fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<String, NodeLoopError> {
                                 var_name: None,
                             })
                                 as Box<dyn CodeGenNode>,
+                            StreamType::CommandPID => Box::new(CommandPIDNode {
+                                in_node: converted_ins[0].clone(),
+                                var_name: None,
+                            }) as Box<dyn CodeGenNode>,
                         }));
                         i_ref.converted = Some(Rc::clone(&converted));
                         output.push(converted);
@@ -571,6 +580,13 @@ fn build_ui(app: &Application) {
         drawing_area.queue_draw();
     }));
     button_box.append(&integral_stream_button);
+    let command_pid_button = Button::builder().label("CommandPID").build();
+    command_pid_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::CommandPID, 0.0, 0.0))));
+        code_gen_flag.set(true);
+        drawing_area.queue_draw();
+    }));
+    button_box.append(&command_pid_button);
     let button_box_scroll = ScrolledWindow::builder()
         .child(&button_box)
         .width_request(200)
