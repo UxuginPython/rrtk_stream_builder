@@ -47,6 +47,10 @@ mod product_stream;
 mod quotient_stream;
 mod sum_stream;
 mod velocity_to_state;
+mod and_stream;
+mod or_stream;
+mod not_stream;
+mod expirer_stream;
 use acceleration_to_state::*;
 use command_pid::*;
 use constant_getter::*;
@@ -69,6 +73,10 @@ use product_stream::*;
 use quotient_stream::*;
 use sum_stream::*;
 use velocity_to_state::*;
+use and_stream::*;
+use or_stream::*;
+use not_stream::*;
+use expirer_stream::*;
 #[derive(Clone, Copy)]
 enum TargetVersion {
     V0_3,
@@ -126,6 +134,10 @@ enum StreamType {
     IfStream,
     IfElseStream,
     FreezeStream,
+    AndStream,
+    OrStream,
+    NotStream,
+    Expirer,
 }
 impl StreamType {
     fn get_in_node_count(&self) -> usize {
@@ -152,6 +164,10 @@ impl StreamType {
             Self::IfStream => 2,
             Self::IfElseStream => 3,
             Self::FreezeStream => 2,
+            Self::AndStream => 2,
+            Self::OrStream => 2,
+            Self::NotStream => 1,
+            Self::Expirer => 1,
         }
     }
     fn get_stream_type_string(&self) -> &str {
@@ -178,6 +194,10 @@ impl StreamType {
             Self::IfStream => "IfStream",
             Self::IfElseStream => "IfElseStream",
             Self::FreezeStream => "FreezeStream",
+            Self::AndStream => "AndStream",
+            Self::OrStream => "OrStream",
+            Self::NotStream => "NotStream",
+            Self::Expirer => "Expirer",
         }
     }
 }
@@ -441,6 +461,24 @@ fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<String, NodeLoopError> {
                                 input: converted_ins[1].clone(),
                                 var_name: None,
                             }),
+                            StreamType::AndStream => Box::new(AndStreamNode {
+                                input1: converted_ins[0].clone(),
+                                input2: converted_ins[1].clone(),
+                                var_name: None,
+                            }),
+                            StreamType::OrStream => Box::new(OrStreamNode {
+                                input1: converted_ins[0].clone(),
+                                input2: converted_ins[1].clone(),
+                                var_name: None,
+                            }),
+                            StreamType::NotStream => Box::new(NotStreamNode {
+                                in_node: converted_ins[0].clone(),
+                                var_name: None,
+                            }),
+                            StreamType::Expirer => Box::new(ExpirerNode {
+                                in_node: converted_ins[0].clone(),
+                                var_name: None,
+                            }),
                         }));
                         i_ref.converted = Some(Rc::clone(&converted));
                         output.push(converted);
@@ -659,6 +697,34 @@ fn build_ui(app: &Application) {
         drawing_area.queue_draw();
     }));
     button_box.append(&freeze_stream_button);
+    let and_stream_button = Button::builder().label("AndStream").build();
+    and_stream_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::AndStream, 0.0, 0.0))));
+        code_gen_flag.set(true);
+        drawing_area.queue_draw();
+    }));
+    button_box.append(&and_stream_button);
+    let or_stream_button = Button::builder().label("OrStream").build();
+    or_stream_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::OrStream, 0.0, 0.0))));
+        code_gen_flag.set(true);
+        drawing_area.queue_draw();
+    }));
+    button_box.append(&or_stream_button);
+    let not_stream_button = Button::builder().label("NotStream").build();
+    not_stream_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::NotStream, 0.0, 0.0))));
+        code_gen_flag.set(true);
+        drawing_area.queue_draw();
+    }));
+    button_box.append(&not_stream_button);
+    let expirer_button = Button::builder().label("Expirer").build();
+    expirer_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::Expirer, 0.0, 0.0))));
+        code_gen_flag.set(true);
+        drawing_area.queue_draw();
+    }));
+    button_box.append(&expirer_button);
     let button_box_scroll = ScrolledWindow::builder()
         .child(&button_box)
         .width_request(200)
