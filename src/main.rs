@@ -32,6 +32,9 @@ mod derivative_stream;
 mod difference_stream;
 mod ewma_stream;
 mod exponent_stream;
+mod freeze_stream;
+mod if_else_stream;
+mod if_stream;
 mod integral_stream;
 mod latest;
 mod moving_average_stream;
@@ -51,6 +54,9 @@ use derivative_stream::*;
 use difference_stream::*;
 use ewma_stream::*;
 use exponent_stream::*;
+use freeze_stream::*;
+use if_else_stream::*;
+use if_stream::*;
 use integral_stream::*;
 use latest::*;
 use moving_average_stream::*;
@@ -117,6 +123,9 @@ enum StreamType {
     DerivativeStream,
     IntegralStream,
     CommandPID,
+    IfStream,
+    IfElseStream,
+    FreezeStream,
 }
 impl StreamType {
     fn get_in_node_count(&self) -> usize {
@@ -140,6 +149,9 @@ impl StreamType {
             Self::DerivativeStream => 1,
             Self::IntegralStream => 1,
             Self::CommandPID => 1,
+            Self::IfStream => 2,
+            Self::IfElseStream => 3,
+            Self::FreezeStream => 2,
         }
     }
     fn get_stream_type_string(&self) -> &str {
@@ -163,6 +175,9 @@ impl StreamType {
             Self::DerivativeStream => "DerivativeStream",
             Self::IntegralStream => "IntegralStream",
             Self::CommandPID => "CommandPID",
+            Self::IfStream => "IfStream",
+            Self::IfElseStream => "IfElseStream",
+            Self::FreezeStream => "FreezeStream",
         }
     }
 }
@@ -408,6 +423,24 @@ fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<String, NodeLoopError> {
                                 var_name: None,
                             })
                                 as Box<dyn CodeGenNode>,
+                            StreamType::IfStream => Box::new(IfStreamNode {
+                                condition: converted_ins[0].clone(),
+                                input: converted_ins[1].clone(),
+                                var_name: None,
+                            })
+                                as Box<dyn CodeGenNode>,
+                            StreamType::IfElseStream => Box::new(IfElseStreamNode {
+                                condition: converted_ins[0].clone(),
+                                true_out: converted_ins[1].clone(),
+                                false_out: converted_ins[2].clone(),
+                                var_name: None,
+                            })
+                                as Box<dyn CodeGenNode>,
+                            StreamType::FreezeStream => Box::new(FreezeStreamNode {
+                                condition: converted_ins[0].clone(),
+                                input: converted_ins[1].clone(),
+                                var_name: None,
+                            }),
                         }));
                         i_ref.converted = Some(Rc::clone(&converted));
                         output.push(converted);
@@ -605,6 +638,27 @@ fn build_ui(app: &Application) {
         drawing_area.queue_draw();
     }));
     button_box.append(&command_pid_button);
+    let if_stream_button = Button::builder().label("IfStream").build();
+    if_stream_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::IfStream, 0.0, 0.0))));
+        code_gen_flag.set(true);
+        drawing_area.queue_draw();
+    }));
+    button_box.append(&if_stream_button);
+    let if_else_stream_button = Button::builder().label("IfElseStream").build();
+    if_else_stream_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::IfElseStream, 0.0, 0.0))));
+        code_gen_flag.set(true);
+        drawing_area.queue_draw();
+    }));
+    button_box.append(&if_else_stream_button);
+    let freeze_stream_button = Button::builder().label("FreezeStream").build();
+    freeze_stream_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::FreezeStream, 0.0, 0.0))));
+        code_gen_flag.set(true);
+        drawing_area.queue_draw();
+    }));
+    button_box.append(&freeze_stream_button);
     let button_box_scroll = ScrolledWindow::builder()
         .child(&button_box)
         .width_request(200)
@@ -634,7 +688,7 @@ fn build_ui(app: &Application) {
             let code = code_gen(nodes);
             match code {
                 Ok(code) => text_buffer.set_text(&code),
-                Err(_) => text_buffer.set_text("error"),
+                Err(_) => text_buffer.set_text("panic!(\"Error generating code\");"),
             }
         }),
     );
@@ -683,7 +737,7 @@ fn build_ui(app: &Application) {
             let code = code_gen(nodes);
             match code {
                 Ok(code) => text_buffer.set_text(&code),
-                Err(_) => text_buffer.set_text("error"),
+                Err(_) => text_buffer.set_text("panic!(\"Error generating code\");"),
             }
             code_gen_flag.set(false);
         }
