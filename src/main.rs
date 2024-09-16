@@ -19,7 +19,8 @@ use glib::clone;
 use gtk4::prelude::*;
 use gtk4::{
     cairo, glib, Application, ApplicationWindow, Button, DrawingArea, DropDown, GestureClick,
-    GestureDrag, Orientation, Paned, ScrolledWindow, TextBuffer, TextView,
+    GestureDrag, Justification, Label, Orientation, Paned, ScrolledWindow, Separator, TextBuffer,
+    TextView,
 };
 use std::cell::{Cell, RefCell};
 use std::cmp::max;
@@ -336,7 +337,9 @@ fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<String, NodeLoopError> {
                                 var_name: None,
                             })
                                 as Box<dyn CodeGenNode>,
-                            StreamType::NoneGetter => Box::new(NoneGetterNode { var_name: None }) as Box<dyn CodeGenNode>,
+                            StreamType::NoneGetter => {
+                                Box::new(NoneGetterNode { var_name: None }) as Box<dyn CodeGenNode>
+                            }
                             StreamType::NoneToError => Box::new(NoneToErrorNode {
                                 in_node: converted_ins[0].clone(),
                                 var_name: None,
@@ -403,7 +406,8 @@ fn code_gen(nodes: Vec<Rc<RefCell<Node>>>) -> Result<String, NodeLoopError> {
                             StreamType::CommandPID => Box::new(CommandPIDNode {
                                 in_node: converted_ins[0].clone(),
                                 var_name: None,
-                            }) as Box<dyn CodeGenNode>,
+                            })
+                                as Box<dyn CodeGenNode>,
                         }));
                         i_ref.converted = Some(Rc::clone(&converted));
                         output.push(converted);
@@ -452,6 +456,12 @@ fn build_ui(app: &Application) {
     let button_box = gtk4::Box::builder()
         .orientation(Orientation::Vertical)
         .build();
+    let label_0_3 = Label::builder()
+        .label("0.3")
+        .justify(Justification::Right)
+        .xalign(1.0)
+        .build();
+    button_box.append(&label_0_3);
     let constant_getter_button = Button::builder().label("ConstantGetter").build();
     constant_getter_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
         nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::ConstantGetter, 0.0, 0.0))));
@@ -489,13 +499,6 @@ fn build_ui(app: &Application) {
         drawing_area.queue_draw();
     }));
     button_box.append(&moving_average_stream_button);
-    let none_getter_button = Button::builder().label("NoneGetter").build();
-    none_getter_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
-        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::NoneGetter, 0.0, 0.0))));
-        code_gen_flag.set(true);
-        drawing_area.queue_draw();
-    }));
-    button_box.append(&none_getter_button);
     let none_to_error_button = Button::builder().label("NoneToError").build();
     none_to_error_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
         nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::NoneToError, 0.0, 0.0))));
@@ -580,6 +583,21 @@ fn build_ui(app: &Application) {
         drawing_area.queue_draw();
     }));
     button_box.append(&integral_stream_button);
+    let separator_0_4 = Separator::new(Orientation::Horizontal);
+    button_box.append(&separator_0_4);
+    let label_0_4 = Label::builder()
+        .label("0.4")
+        .justify(Justification::Right)
+        .xalign(1.0)
+        .build();
+    button_box.append(&label_0_4);
+    let none_getter_button = Button::builder().label("NoneGetter").build();
+    none_getter_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
+        nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::NoneGetter, 0.0, 0.0))));
+        code_gen_flag.set(true);
+        drawing_area.queue_draw();
+    }));
+    button_box.append(&none_getter_button);
     let command_pid_button = Button::builder().label("CommandPID").build();
     command_pid_button.connect_clicked(clone!(@strong code_gen_flag, @strong drawing_area, @strong nodes => move |_| {
         nodes.borrow_mut().push(Rc::new(RefCell::new(Node::new(StreamType::CommandPID, 0.0, 0.0))));
