@@ -10,6 +10,9 @@ Copyright 2024 UxuginPython on GitHub
 
     You should have received a copy of the GNU Lesser General Public License along with RRTK Stream Builder. If not, see <https://www.gnu.org/licenses/>.
 */
+//I am fully aware that this codebase is a huge mess right now. The point of 0.1.1 is just to add
+//support for RRTK 0.4 and not to fix this. It eventually needs almost a complete rewrite, and I do
+//plan to do that at some point.
 const NODE_WIDTH: f64 = 200.0;
 const APP_ID: &str = "com.uxugin.rrtk_stream_builder";
 static mut TARGET_VERSION: TargetVersion = TargetVersion::V0_4;
@@ -26,11 +29,13 @@ use std::cell::{Cell, RefCell};
 use std::cmp::max;
 use std::rc::Rc;
 mod acceleration_to_state;
+mod and_stream;
 mod command_pid;
 mod constant_getter;
 mod derivative_stream;
 mod difference_stream;
 mod ewma_stream;
+mod expirer_stream;
 mod exponent_stream;
 mod freeze_stream;
 mod if_else_stream;
@@ -41,22 +46,22 @@ mod moving_average_stream;
 mod none_getter;
 mod none_to_error;
 mod none_to_value;
+mod not_stream;
+mod or_stream;
 mod pid_controller_stream;
 mod position_to_state;
 mod product_stream;
 mod quotient_stream;
 mod sum_stream;
 mod velocity_to_state;
-mod and_stream;
-mod or_stream;
-mod not_stream;
-mod expirer_stream;
 use acceleration_to_state::*;
+use and_stream::*;
 use command_pid::*;
 use constant_getter::*;
 use derivative_stream::*;
 use difference_stream::*;
 use ewma_stream::*;
+use expirer_stream::*;
 use exponent_stream::*;
 use freeze_stream::*;
 use if_else_stream::*;
@@ -67,16 +72,14 @@ use moving_average_stream::*;
 use none_getter::*;
 use none_to_error::*;
 use none_to_value::*;
+use not_stream::*;
+use or_stream::*;
 use pid_controller_stream::*;
 use position_to_state::*;
 use product_stream::*;
 use quotient_stream::*;
 use sum_stream::*;
 use velocity_to_state::*;
-use and_stream::*;
-use or_stream::*;
-use not_stream::*;
-use expirer_stream::*;
 #[derive(Clone, Copy)]
 enum TargetVersion {
     V0_3,
