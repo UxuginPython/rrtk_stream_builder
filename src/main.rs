@@ -1,15 +1,6 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-/*
-Copyright 2024 UxuginPython on GitHub
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright 2024 UxuginPython
 
-     This file is part of RRTK Stream Builder.
-
-    RRTK Stream Builder is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, version 3.
-
-    RRTK Stream Builder is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public License along with RRTK Stream Builder. If not, see <https://www.gnu.org/licenses/>.
-*/
 //I am fully aware that this codebase is a huge mess right now. The point of 0.1.1 is just to add
 //support for RRTK 0.4 and not to fix this. It eventually needs almost a complete rewrite, and I do
 //plan to do that at some point.

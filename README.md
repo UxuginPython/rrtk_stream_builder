@@ -1,8 +1,10 @@
 # RRTK Stream Builder
 ### Code generation from visual nodes for the [RRTK](https://crates.io/crates/rrtk) stream system.
 This program is still pretty early in development and there are notable important features missing. The most important of these are the inability to save workflows and the inability to name nodes. The code structure more generally could also use some improvement.
-## License
-#### GNU Lesser General Public License, version 3 only
+## License: BSD 3-Clause
+This basically means that you can do whatever you want as long as you give me attribution and you don't remove the license notices or use my name to endorse stuff I don't. Read the actual license for details though.
+
+**RRTK Stream Builder was previously licensed under LGPL. Versions 0.1.1 and earlier have been retroactively dual licensed under LGPL-3.0-only OR BSD-3-Clause. Versions after 0.1.1 are just BSD-3-Clause.** This transition does not remove any freedoms, and the LGPL for old versions is maintained solely due to its irrevocability. It is entirely redundant freedoms-wise.
 ## Installation
 Installation is pretty much like any other gtk4-rs app. These are installation instructions for Linux. See the [gtk-rs documentation](https://gtk-rs.org/gtk4-rs/stable/latest/book/installation.html) for more details and other platforms. You will also need the Rust toolchain already installed. If you have not yet done this, see the [Rust installation instructions](https://www.rust-lang.org/tools/install).
 ### Fedora

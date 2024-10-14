@@ -1,7 +1,9 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright 2024 UxuginPython
 [package]
 name = "rrtk_stream_builder"
 version = "0.1.1"
-license = "LGPL-3.0-only"
+license = "BSD-3-Clause"
 edition = "2021"
 authors = ["UxuginPython <uxugin at uxugin dot com>"]
 repository = "https://github.com/UxuginPython/rrtk_stream_builder"
