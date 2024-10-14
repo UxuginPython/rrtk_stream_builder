@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024 UxuginPython
+use crate::*;
 #[derive(Clone)]
 pub struct LatestNode {
     pub in_nodes: Vec<Option<Rc<RefCell<Box<dyn CodeGenNode>>>>>,
