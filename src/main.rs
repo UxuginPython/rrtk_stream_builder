@@ -6,6 +6,13 @@ use gtk4::prelude::*;
 use gtk4::{cairo, glib, Application, ApplicationWindow};
 use std::{cell::RefCell, rc::Rc};
 const APP_ID: &str = "com.uxugin.rrtk_stream_builder";
+fn max_partial_ord<T: PartialOrd>(x: T, y: T) -> T {
+    if x >= y {
+        x
+    } else {
+        y
+    }
+}
 struct Node {
     type_name: String,
     inputs: Vec<Option<Rc<RefCell<Node>>>>,
@@ -33,6 +40,10 @@ impl Node {
     fn get_output_coords(&self) -> (f64, f64) {
         (self.x + 85.0, self.y + 15.0)
     }
+    #[inline]
+    fn get_draw_height(&self) -> f64 {
+        max_partial_ord(30.0, 10.0 + 20.0 * self.inputs.len() as f64)
+    }
     fn new_none_getter() -> Self {
         Self::new(
             "NoneGetter".into(),
@@ -55,13 +66,6 @@ impl Node {
         )
     }
 }
-fn max_partial_ord<T: PartialOrd>(x: T, y: T) -> T {
-    if x >= y {
-        x
-    } else {
-        y
-    }
-}
 impl Draggable for Node {
     fn draw(&self, context: &Context, x: f64, y: f64) -> Result<(), Error> {
         unsafe {
@@ -71,12 +75,7 @@ impl Draggable for Node {
             (*ptr).y = y;
         }
         context.set_source_rgb(0.5, 0.5, 0.5);
-        context.rectangle(
-            x,
-            y,
-            100.0,
-            max_partial_ord(30.0, 10.0 + 20.0 * self.inputs.len() as f64),
-        );
+        context.rectangle(x, y, 100.0, self.get_draw_height());
         context.fill()?;
         context.set_source_rgb(0.0, 0.0, 0.0);
         context.rectangle(x + 80.0, y + 10.0, 10.0, 10.0);
@@ -99,12 +98,27 @@ impl Draggable for Node {
         Ok(())
     }
     fn get_limits(&self) -> (f64, f64, f64, f64) {
-        (
-            0.0,
-            100.0,
-            0.0,
-            max_partial_ord(30.0, 10.0 + 20.0 * self.inputs.len() as f64),
-        )
+        (0.0, 100.0, 0.0, self.get_draw_height())
+    }
+    fn contains(&self, x: f64, y: f64) -> bool {
+        //If it's outside of the gray rectangle, false.
+        if !(x >= 0.0 && x <= 100.0 && y >= 0.0 && y <= self.get_draw_height()) {
+            return false;
+        }
+        //If it's in the output terminal, false.
+        if x >= 80.0 && x <= 90.0 && y >= 10.0 && y <= 20.0 {
+            return false;
+        }
+        //If there are no inputs, it's in the gray rectangle, and it's not in the output terminal, true.
+        if self.inputs.len() == 0 {
+            return true;
+        }
+        //If it's in an input terminal, false.
+        if x >= 10.0 && x <= 20.0 && y % 20.0 >= 10.0 {
+            return false;
+        }
+        //If it's in the gray rectangle, it's not in the output terminal, and it's not in an input terminal, true.
+        true
     }
 }
 fn main() -> glib::ExitCode {
