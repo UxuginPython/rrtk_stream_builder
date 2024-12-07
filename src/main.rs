@@ -3,7 +3,7 @@
 use cairo::{Context, Error};
 use cairodrag::*;
 use gtk4::prelude::*;
-use gtk4::{cairo, glib, Application, ApplicationWindow};
+use gtk4::{cairo, glib, Application, ApplicationWindow, GestureDrag};
 use std::{cell::RefCell, rc::Rc};
 const APP_ID: &str = "com.uxugin.rrtk_stream_builder";
 fn max_partial_ord<T: PartialOrd>(x: T, y: T) -> T {
@@ -64,6 +64,13 @@ impl Node {
                 )
             }),
         )
+    }
+    fn relative_in_output_terminal(&self, x: f64, y: f64) -> bool {
+        x >= 80.0 && x <= 90.0 && y >= 10.0 && y <= 20.0
+    }
+    fn absolute_in_output_terminal(&self, x: f64, y: f64) -> bool {
+        let (x, y) = (x - self.x, y - self.y);
+        self.relative_in_output_terminal(x, y)
     }
 }
 impl Draggable for Node {
@@ -127,12 +134,34 @@ fn main() -> glib::ExitCode {
     app.run()
 }
 fn build_ui(app: &Application) {
-    let mut drag_area = DragArea::new(500, 500);
     let none = Rc::new(RefCell::new(Node::new_none_getter()));
     let quotient = Rc::new(RefCell::new(Node::new_quotient_stream()));
     quotient.borrow_mut().inputs[0] = Some(Rc::clone(&none));
-    drag_area.push_rc_ref_cell(none, 100.0, 100.0);
-    drag_area.push_rc_ref_cell(quotient, 100.0, 200.0);
+
+    let drag_area = DragArea::new(500, 500);
+
+    let drag_gesture_nodes = Rc::new(RefCell::new(Vec::<Rc<RefCell<Node>>>::new()));
+    let drag = GestureDrag::new();
+    let my_drag_gesture_nodes = drag_gesture_nodes.clone();
+    drag.connect_drag_begin(move |_gesture: &GestureDrag, x: f64, y: f64| {
+        for node in my_drag_gesture_nodes.borrow().iter() {
+            if node.borrow().absolute_in_output_terminal(x, y) {
+                println!("in");
+            }
+        }
+    });
+    drag_area.add_controller(drag);
+
+    let mut my_drag_area = drag_area.clone(); //This works like Rc, I think
+    let my_drag_gesture_nodes = drag_gesture_nodes.clone();
+    let mut push = move |node: Rc<RefCell<Node>>, x, y| {
+        my_drag_area.push_rc_ref_cell(node.clone(), x, y);
+        my_drag_gesture_nodes.borrow_mut().push(node);
+    };
+
+    push(none, 100.0, 100.0);
+    push(quotient, 100.0, 200.0);
+
     let window = ApplicationWindow::builder()
         .application(app)
         .child(&drag_area)
