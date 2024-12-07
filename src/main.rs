@@ -6,6 +6,12 @@ use gtk4::prelude::*;
 use gtk4::{cairo, glib, Application, ApplicationWindow, GestureDrag};
 use std::{cell::RefCell, rc::Rc};
 const APP_ID: &str = "com.uxugin.rrtk_stream_builder";
+enum TargetVersion {
+    V0_3,
+    V0_4,
+    V0_5,
+    V0_6,
+}
 fn max_partial_ord<T: PartialOrd>(x: T, y: T) -> T {
     if x >= y {
         x
@@ -20,13 +26,13 @@ struct Node {
     y: f64,
     var_name: Option<String>,
     // |my_var_name: String, input_var_names: Vec<String>| {line_of_code}
-    generate_func: Box<dyn Fn(String, Vec<String>) -> String>,
+    generate_func: Box<dyn Fn(TargetVersion, String, Vec<String>) -> String>,
 }
 impl Node {
     fn new(
         type_name: String,
         input_count: usize,
-        generate_func: Box<impl Fn(String, Vec<String>) -> String + 'static>,
+        generate_func: Box<impl Fn(TargetVersion, String, Vec<String>) -> String + 'static>,
     ) -> Self {
         Self {
             type_name: type_name,
@@ -34,7 +40,8 @@ impl Node {
             x: 0.0,
             y: 0.0,
             var_name: None,
-            generate_func: generate_func as Box<dyn Fn(String, Vec<String>) -> String>,
+            generate_func: generate_func
+                as Box<dyn Fn(TargetVersion, String, Vec<String>) -> String>,
         }
     }
     fn get_output_coords(&self) -> (f64, f64) {
@@ -48,21 +55,39 @@ impl Node {
         Self::new(
             "NoneGetter".into(),
             0,
-            Box::new(|var_name, _input_names| {
-                format!("let {} = static_reference!(NoneGetter::new());\n", var_name)
-            }),
+            Box::new(
+                |target_version, var_name, _input_names| match target_version {
+                    TargetVersion::V0_3 => "panic!(\"NoneGetter available in RRTK 0.4+\");\n".into(),
+                    TargetVersion::V0_4 => {
+                        format!("let {} = make_input_getter(NoneGetter::new());\n", var_name)
+                    }
+                    TargetVersion::V0_5 | TargetVersion::V0_6 => {
+                        format!("let {} = static_reference!(NoneGetter::new());\n", var_name)
+                    }
+                },
+            ),
         )
     }
     fn new_quotient_stream() -> Self {
         Self::new(
             "QuotientStream".into(),
             2,
-            Box::new(|var_name, input_names: Vec<String>| {
-                format!(
-                    "let {} = static_reference!(QuotientStream::new({}, {}));\n",
-                    var_name, input_names[0], input_names[1]
-                )
-            }),
+            Box::new(
+                |target_version, var_name, input_names: Vec<String>| match target_version {
+                    TargetVersion::V0_3 => format!(
+                        "let {} = make_input_getter!(QuotientStream::new({}, {}), f32, E);\n",
+                        var_name, input_names[0], input_names[1]
+                    ),
+                    TargetVersion::V0_4 => format!(
+                        "let {} = make_input_getter(QuotientStream::new({}, {}));\n",
+                        var_name, input_names[0], input_names[1]
+                    ),
+                    TargetVersion::V0_5 | TargetVersion::V0_6 => format!(
+                        "let {} = static_reference!(QuotientStream::new({}, {}));\n",
+                        var_name, input_names[0], input_names[1]
+                    ),
+                },
+            ),
         )
     }
     fn relative_in_output_terminal(&self, x: f64, y: f64) -> bool {
