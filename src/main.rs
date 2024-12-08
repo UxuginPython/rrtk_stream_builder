@@ -57,7 +57,9 @@ impl Node {
             0,
             Box::new(
                 |target_version, var_name, _input_names| match target_version {
-                    TargetVersion::V0_3 => "panic!(\"NoneGetter available in RRTK 0.4+\");\n".into(),
+                    TargetVersion::V0_3 => {
+                        "panic!(\"NoneGetter available in RRTK 0.4+\");\n".into()
+                    }
                     TargetVersion::V0_4 => {
                         format!("let {} = make_input_getter(NoneGetter::new());\n", var_name)
                     }
@@ -96,6 +98,18 @@ impl Node {
     fn absolute_in_output_terminal(&self, x: f64, y: f64) -> bool {
         let (x, y) = (x - self.x, y - self.y);
         self.relative_in_output_terminal(x, y)
+    }
+    fn relative_in_input_terminal(&self, x: f64, y: f64) -> Option<usize> {
+        if !(x >= 10.0 && x <= 20.0 && y % 20.0 >= 10.0) {
+            return None;
+        }
+        let index = (x - x % 10.0) / 10.0;
+        let index = index as usize - 1 / 2;
+        Some(index)
+    }
+    fn absolute_in_input_terminal(&self, x: f64, y: f64) -> Option<usize> {
+        let (x, y) = (x - self.x, y - self.y);
+        self.relative_in_input_terminal(x, y)
     }
 }
 impl Draggable for Node {
