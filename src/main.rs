@@ -6,6 +6,7 @@ use gtk4::prelude::*;
 use gtk4::{cairo, glib, Application, ApplicationWindow, GestureDrag};
 use std::{cell::RefCell, rc::Rc};
 const APP_ID: &str = "com.uxugin.rrtk_stream_builder";
+#[derive(Clone, Copy)]
 enum TargetVersion {
     V0_3,
     V0_4,
@@ -176,6 +177,56 @@ impl Draggable for Node {
         true
     }
 }
+fn code_gen_one(
+    node: Rc<RefCell<Node>>,
+    target_version: TargetVersion,
+    next_number: &mut u32,
+) -> String {
+    let mut node_borrow = node.borrow_mut();
+    if node_borrow.var_name.is_some() {
+        return String::new();
+    }
+    let mut output = String::new();
+    for input in &node_borrow.inputs {
+        match input {
+            Some(input) => {
+                output.push_str(&code_gen_one(input.clone(), target_version, next_number));
+            }
+            None => {}
+        }
+    }
+    node_borrow.var_name = Some(format!("node_{}", next_number));
+    *next_number += 1;
+    let mut input_var_names = Vec::<String>::with_capacity(node_borrow.inputs.len());
+    for input in &node_borrow.inputs {
+        input_var_names.push(match input {
+            Some(input) => input.borrow().var_name.clone().expect("code_gen_one always leaves its input with var_name as Some, and we called it on all the inputs"),
+            None => "todo!()".into(),
+        });
+    }
+    debug_assert_eq!(input_var_names.len(), node_borrow.inputs.len());
+    output.push_str(&(node_borrow.generate_func)(
+        target_version,
+        node_borrow.var_name.clone().unwrap(),
+        input_var_names,
+    ));
+    output
+}
+fn code_gen(nodes: &Vec<Rc<RefCell<Node>>>, target_version: TargetVersion) -> String {
+    for node in nodes {
+        node.borrow_mut().var_name = None;
+    }
+    let mut next_number = 0u32;
+    let mut output = String::new();
+    for node in nodes {
+        output.push_str(&code_gen_one(
+            node.clone(),
+            target_version,
+            &mut next_number,
+        ));
+    }
+    output
+}
 #[derive(Clone)]
 struct DragInfo {
     node: Rc<RefCell<Node>>,
@@ -233,6 +284,10 @@ fn build_ui(app: &Application) {
         }
         my_drag_area.queue_draw();
         *my_drag_info.borrow_mut() = None;
+        println!(
+            "{}",
+            code_gen(&my_drag_gesture_nodes.borrow(), TargetVersion::V0_6)
+        );
     });
     drag_area.add_controller(drag);
 
