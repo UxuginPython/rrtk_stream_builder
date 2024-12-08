@@ -167,6 +167,12 @@ impl Draggable for Node {
         true
     }
 }
+#[derive(Clone)]
+struct DragInfo {
+    node: Rc<RefCell<Node>>,
+    start_x: f64,
+    start_y: f64,
+}
 fn main() -> glib::ExitCode {
     let app = Application::builder().application_id(APP_ID).build();
     app.connect_activate(build_ui);
@@ -178,14 +184,41 @@ fn build_ui(app: &Application) {
     quotient.borrow_mut().inputs[0] = Some(Rc::clone(&none));
 
     let drag_area = DragArea::new(500, 500);
+    let drag_info: Rc<RefCell<Option<DragInfo>>> = Rc::new(RefCell::new(None));
 
     let drag_gesture_nodes = Rc::new(RefCell::new(Vec::<Rc<RefCell<Node>>>::new()));
     let drag = GestureDrag::new();
     let my_drag_gesture_nodes = drag_gesture_nodes.clone();
+    let my_drag_info = drag_info.clone();
     drag.connect_drag_begin(move |_gesture: &GestureDrag, x: f64, y: f64| {
+        let mut my_drag_info_borrow = my_drag_info.borrow_mut();
         for node in my_drag_gesture_nodes.borrow().iter() {
             if node.borrow().absolute_in_output_terminal(x, y) {
                 println!("in");
+                *my_drag_info_borrow = Some(DragInfo {
+                    node: node.clone(),
+                    start_x: x,
+                    start_y: y,
+                });
+                break;
+            }
+        }
+    });
+    let my_drag_gesture_nodes = drag_gesture_nodes.clone();
+    let my_drag_info = drag_info.clone();
+    drag.connect_drag_end(move |_gesture: &GestureDrag, x: f64, y: f64| {
+        //FIXME: It only prints the index when the drag started at the end of a node and I don't
+        //know why. I checked and the drag begin function is always being called as is this
+        //function, and the unwrap's fine. Very odd.
+        let my_drag_info_borrow = my_drag_info.borrow().clone().unwrap();
+        let (x, y) = (
+            my_drag_info_borrow.start_x + x,
+            my_drag_info_borrow.start_y + y,
+        );
+        for node in my_drag_gesture_nodes.borrow().iter() {
+            if let Some(index) = node.borrow().absolute_in_input_terminal(x, y) {
+                println!("{}", index);
+                break;
             }
         }
     });
