@@ -100,10 +100,15 @@ impl Node {
         self.relative_in_output_terminal(x, y)
     }
     fn relative_in_input_terminal(&self, x: f64, y: f64) -> Option<usize> {
+        //If it's outside of the gray rectangle, None.
         if !(x >= 0.0 && x <= 100.0 && y >= 0.0 && y <= self.get_draw_height()) {
             return None;
         }
-        //FIXME: Make this not fail with 0 inputs.
+        //If there are no inputs, it's in the gray rectangle, and it's not in the output terminal, None.
+        if self.inputs.len() == 0 {
+            return None;
+        }
+        //If it's not in an input terminal, None.
         if !(x >= 10.0 && x <= 20.0 && y % 20.0 >= 10.0) {
             return None;
         }
@@ -220,8 +225,10 @@ fn build_ui(app: &Application) {
             my_drag_info_borrow.start_y + y,
         );
         for node in my_drag_gesture_nodes.borrow().iter() {
-            if let Some(index) = node.borrow().absolute_in_input_terminal(x, y) {
+            let mut node_borrow = node.borrow_mut();
+            if let Some(index) = node_borrow.absolute_in_input_terminal(x, y) {
                 println!("{}", index);
+                node_borrow.inputs[index] = Some(my_drag_info_borrow.node.clone());
                 break;
             }
         }
