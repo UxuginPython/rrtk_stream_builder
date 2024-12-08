@@ -100,11 +100,15 @@ impl Node {
         self.relative_in_output_terminal(x, y)
     }
     fn relative_in_input_terminal(&self, x: f64, y: f64) -> Option<usize> {
+        if !(x >= 0.0 && x <= 100.0 && y >= 0.0 && y <= self.get_draw_height()) {
+            return None;
+        }
+        //FIXME: Make this not fail with 0 inputs.
         if !(x >= 10.0 && x <= 20.0 && y % 20.0 >= 10.0) {
             return None;
         }
-        let index = (x - x % 10.0) / 10.0;
-        let index = index as usize - 1 / 2;
+        let index = (y - y % 10.0) / 10.0;
+        let index = (index as usize - 1) / 2;
         Some(index)
     }
     fn absolute_in_input_terminal(&self, x: f64, y: f64) -> Option<usize> {
@@ -207,10 +211,10 @@ fn build_ui(app: &Application) {
     let my_drag_gesture_nodes = drag_gesture_nodes.clone();
     let my_drag_info = drag_info.clone();
     drag.connect_drag_end(move |_gesture: &GestureDrag, x: f64, y: f64| {
-        //FIXME: It only prints the index when the drag started at the end of a node and I don't
-        //know why. I checked and the drag begin function is always being called as is this
-        //function, and the unwrap's fine. Very odd.
-        let my_drag_info_borrow = my_drag_info.borrow().clone().unwrap();
+        let my_drag_info_borrow = match my_drag_info.borrow().clone() {
+            Some(x) => x,
+            None => return,
+        };
         let (x, y) = (
             my_drag_info_borrow.start_x + x,
             my_drag_info_borrow.start_y + y,
@@ -221,6 +225,7 @@ fn build_ui(app: &Application) {
                 break;
             }
         }
+        *my_drag_info.borrow_mut() = None;
     });
     drag_area.add_controller(drag);
 
