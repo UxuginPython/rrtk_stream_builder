@@ -4,7 +4,10 @@ use cairo::{Context, Error};
 use cairodrag::*;
 use gtk4::prelude::*;
 use gtk4::{cairo, glib, Application, ApplicationWindow, GestureDrag};
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+};
 const APP_ID: &str = "com.uxugin.rrtk_stream_builder";
 #[derive(Clone, Copy)]
 enum TargetVersion {
@@ -23,8 +26,8 @@ fn max_partial_ord<T: PartialOrd>(x: T, y: T) -> T {
 struct Node {
     type_name: String,
     inputs: Vec<Option<Rc<RefCell<Node>>>>,
-    x: f64,
-    y: f64,
+    x: Cell<f64>,
+    y: Cell<f64>,
     var_name: Option<String>,
     // |my_var_name: String, input_var_names: Vec<String>| {line_of_code}
     generate_func: Box<dyn Fn(TargetVersion, String, Vec<String>) -> String>,
@@ -38,15 +41,15 @@ impl Node {
         Self {
             type_name: type_name,
             inputs: vec![None; input_count],
-            x: 0.0,
-            y: 0.0,
+            x: Cell::new(0.0),
+            y: Cell::new(0.0),
             var_name: None,
             generate_func: generate_func
                 as Box<dyn Fn(TargetVersion, String, Vec<String>) -> String>,
         }
     }
     fn get_output_coords(&self) -> (f64, f64) {
-        (self.x + 85.0, self.y + 15.0)
+        (self.x.get() + 85.0, self.y.get() + 15.0)
     }
     #[inline]
     fn get_draw_height(&self) -> f64 {
@@ -97,7 +100,7 @@ impl Node {
         x >= 80.0 && x <= 90.0 && y >= 10.0 && y <= 20.0
     }
     fn absolute_in_output_terminal(&self, x: f64, y: f64) -> bool {
-        let (x, y) = (x - self.x, y - self.y);
+        let (x, y) = (x - self.x.get(), y - self.y.get());
         self.relative_in_output_terminal(x, y)
     }
     fn relative_in_input_terminal(&self, x: f64, y: f64) -> Option<usize> {
@@ -118,18 +121,14 @@ impl Node {
         Some(index)
     }
     fn absolute_in_input_terminal(&self, x: f64, y: f64) -> Option<usize> {
-        let (x, y) = (x - self.x, y - self.y);
+        let (x, y) = (x - self.x.get(), y - self.y.get());
         self.relative_in_input_terminal(x, y)
     }
 }
 impl Draggable for Node {
     fn draw(&self, context: &Context, x: f64, y: f64) -> Result<(), Error> {
-        unsafe {
-            //self is a reference
-            let ptr = self as *const Node as *mut Node;
-            (*ptr).x = x;
-            (*ptr).y = y;
-        }
+        self.x.set(x);
+        self.y.set(y);
         context.set_source_rgb(0.5, 0.5, 0.5);
         context.rectangle(x, y, 100.0, self.get_draw_height());
         context.fill()?;
@@ -146,7 +145,7 @@ impl Draggable for Node {
                 None => continue,
             };
             let (in_x, in_y) = input.get_output_coords();
-            let (my_x, my_y) = (self.x + 15.0, self.y + 15.0 + 20.0 * i as f64);
+            let (my_x, my_y) = (self.x.get() + 15.0, self.y.get() + 15.0 + 20.0 * i as f64);
             context.line_to(in_x, in_y);
             context.line_to(my_x, my_y);
             context.stroke()?;
