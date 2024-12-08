@@ -203,7 +203,6 @@ fn build_ui(app: &Application) {
         let mut my_drag_info_borrow = my_drag_info.borrow_mut();
         for node in my_drag_gesture_nodes.borrow().iter() {
             if node.borrow().absolute_in_output_terminal(x, y) {
-                println!("in");
                 *my_drag_info_borrow = Some(DragInfo {
                     node: node.clone(),
                     start_x: x,
@@ -213,6 +212,7 @@ fn build_ui(app: &Application) {
             }
         }
     });
+    let my_drag_area = drag_area.clone();
     let my_drag_gesture_nodes = drag_gesture_nodes.clone();
     let my_drag_info = drag_info.clone();
     drag.connect_drag_end(move |_gesture: &GestureDrag, x: f64, y: f64| {
@@ -227,11 +227,11 @@ fn build_ui(app: &Application) {
         for node in my_drag_gesture_nodes.borrow().iter() {
             let mut node_borrow = node.borrow_mut();
             if let Some(index) = node_borrow.absolute_in_input_terminal(x, y) {
-                println!("{}", index);
                 node_borrow.inputs[index] = Some(my_drag_info_borrow.node.clone());
                 break;
             }
         }
+        my_drag_area.queue_draw();
         *my_drag_info.borrow_mut() = None;
     });
     drag_area.add_controller(drag);
