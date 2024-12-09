@@ -8,6 +8,7 @@ use std::{
     cell::{Cell, RefCell},
     rc::Rc,
 };
+const NODE_WIDTH: f64 = 200.0;
 const APP_ID: &str = "com.uxugin.rrtk_stream_builder";
 #[derive(Clone, Copy)]
 enum TargetVersion {
@@ -49,7 +50,7 @@ impl Node {
         }
     }
     fn get_output_coords(&self) -> (f64, f64) {
-        (self.x.get() + 85.0, self.y.get() + 15.0)
+        (self.x.get() + NODE_WIDTH - 15.0, self.y.get() + 15.0)
     }
     #[inline]
     fn get_draw_height(&self) -> f64 {
@@ -97,7 +98,7 @@ impl Node {
         )
     }
     fn relative_in_output_terminal(&self, x: f64, y: f64) -> bool {
-        x >= 80.0 && x <= 90.0 && y >= 10.0 && y <= 20.0
+        x >= NODE_WIDTH - 20.0 && x <= NODE_WIDTH - 10.0 && y >= 10.0 && y <= 20.0
     }
     fn absolute_in_output_terminal(&self, x: f64, y: f64) -> bool {
         let (x, y) = (x - self.x.get(), y - self.y.get());
@@ -105,7 +106,7 @@ impl Node {
     }
     fn relative_in_input_terminal(&self, x: f64, y: f64) -> Option<usize> {
         //If it's outside of the gray rectangle, None.
-        if !(x >= 0.0 && x <= 100.0 && y >= 0.0 && y <= self.get_draw_height()) {
+        if !(x >= 0.0 && x <= NODE_WIDTH && y >= 0.0 && y <= self.get_draw_height()) {
             return None;
         }
         //If there are no inputs, it's in the gray rectangle, and it's not in the output terminal, None.
@@ -130,10 +131,10 @@ impl Draggable for Node {
         self.x.set(x);
         self.y.set(y);
         context.set_source_rgb(0.5, 0.5, 0.5);
-        context.rectangle(x, y, 100.0, self.get_draw_height());
+        context.rectangle(x, y, NODE_WIDTH, self.get_draw_height());
         context.fill()?;
         context.set_source_rgb(0.0, 0.0, 0.0);
-        context.rectangle(x + 80.0, y + 10.0, 10.0, 10.0);
+        context.rectangle(x + NODE_WIDTH - 20.0, y + 10.0, 10.0, 10.0);
         for i in 0..self.inputs.len() {
             let terminal_y = y + 20.0 * i as f64 + 10.0;
             context.rectangle(x + 10.0, terminal_y, 10.0, 10.0);
@@ -153,15 +154,15 @@ impl Draggable for Node {
         Ok(())
     }
     fn get_limits(&self) -> (f64, f64, f64, f64) {
-        (0.0, 100.0, 0.0, self.get_draw_height())
+        (0.0, NODE_WIDTH, 0.0, self.get_draw_height())
     }
     fn contains(&self, x: f64, y: f64) -> bool {
         //If it's outside of the gray rectangle, false.
-        if !(x >= 0.0 && x <= 100.0 && y >= 0.0 && y <= self.get_draw_height()) {
+        if !(x >= 0.0 && x <= NODE_WIDTH && y >= 0.0 && y <= self.get_draw_height()) {
             return false;
         }
         //If it's in the output terminal, false.
-        if x >= 80.0 && x <= 90.0 && y >= 10.0 && y <= 20.0 {
+        if x >= NODE_WIDTH - 20.0 && x <= NODE_WIDTH - 10.0 && y >= 10.0 && y <= 20.0 {
             return false;
         }
         //If there are no inputs, it's in the gray rectangle, and it's not in the output terminal, true.
