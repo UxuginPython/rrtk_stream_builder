@@ -151,6 +151,14 @@ impl Draggable for Node {
             context.line_to(my_x, my_y);
             context.stroke()?;
         }
+        context.select_font_face("Sans", cairo::FontSlant::Normal, cairo::FontWeight::Normal);
+        context.set_font_size(12.0);
+        let extents = context.text_extents(&self.type_name)?;
+        context.move_to(
+            self.x.get() + NODE_WIDTH / 2.0 - extents.width() / 2.0,
+            self.y.get() + self.get_draw_height() / 2.0 + extents.height() / 2.0,
+        );
+        context.show_text(&self.type_name)?;
         Ok(())
     }
     fn get_limits(&self) -> (f64, f64, f64, f64) {
