@@ -176,20 +176,30 @@ impl Draggable for Node {
         true
     }
 }
+#[derive(Debug)]
+struct NodeLoopError;
 fn code_gen_one(
     node: Rc<RefCell<Node>>,
     target_version: TargetVersion,
     next_number: &mut u32,
-) -> String {
-    let mut node_borrow = node.borrow_mut();
+) -> Result<String, NodeLoopError> {
+    let mut node_borrow = match node.try_borrow_mut() {
+        Ok(borrow) => borrow,
+        Err(_) => return Err(NodeLoopError),
+    };
     if node_borrow.var_name.is_some() {
-        return String::new();
+        return Ok(String::new());
     }
     let mut output = String::new();
     for input in &node_borrow.inputs {
         match input {
             Some(input) => {
-                output.push_str(&code_gen_one(input.clone(), target_version, next_number));
+                output.push_str(
+                    &match code_gen_one(input.clone(), target_version, next_number) {
+                        Ok(string) => string,
+                        Err(error) => return Err(error),
+                    },
+                );
             }
             None => {}
         }
@@ -209,22 +219,26 @@ fn code_gen_one(
         node_borrow.var_name.clone().unwrap(),
         input_var_names,
     ));
-    output
+    Ok(output)
 }
-fn code_gen(nodes: &Vec<Rc<RefCell<Node>>>, target_version: TargetVersion) -> String {
+fn code_gen(
+    nodes: &Vec<Rc<RefCell<Node>>>,
+    target_version: TargetVersion,
+) -> Result<String, NodeLoopError> {
     for node in nodes {
         node.borrow_mut().var_name = None;
     }
     let mut next_number = 0u32;
     let mut output = String::new();
     for node in nodes {
-        output.push_str(&code_gen_one(
-            node.clone(),
-            target_version,
-            &mut next_number,
-        ));
+        output.push_str(
+            &match code_gen_one(node.clone(), target_version, &mut next_number) {
+                Ok(string) => string,
+                Err(error) => return Err(error),
+            },
+        );
     }
-    output
+    Ok(output)
 }
 #[derive(Clone)]
 struct DragInfo {
@@ -285,7 +299,10 @@ fn build_ui(app: &Application) {
         *my_drag_info.borrow_mut() = None;
         println!(
             "{}",
-            code_gen(&my_drag_gesture_nodes.borrow(), TargetVersion::V0_6)
+            match code_gen(&my_drag_gesture_nodes.borrow(), TargetVersion::V0_6) {
+                Ok(string) => string,
+                Err(_) => "error".into(),
+            }
         );
     });
     drag_area.add_controller(drag);
