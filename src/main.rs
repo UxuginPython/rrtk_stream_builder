@@ -159,6 +159,23 @@ impl Draggable for Node {
             self.y.get() + self.get_draw_height() / 2.0 + extents.height() / 2.0,
         );
         context.show_text(&self.type_name)?;
+        match &self.var_name {
+            Some(var_name) => {
+                context.select_font_face(
+                    "Mono",
+                    cairo::FontSlant::Normal,
+                    cairo::FontWeight::Normal,
+                );
+                context.set_font_size(8.0);
+                let extents = context.text_extents(&var_name)?;
+                context.move_to(
+                    self.x.get() + NODE_WIDTH / 2.0 - extents.width() / 2.0,
+                    self.y.get() + extents.height(),
+                );
+                context.show_text(&var_name)?;
+            }
+            None => {}
+        }
         Ok(())
     }
     fn get_limits(&self) -> (f64, f64, f64, f64) {
@@ -325,6 +342,14 @@ fn build_ui(app: &Application) {
 
     push(none, 100.0, 100.0);
     push(quotient, 100.0, 200.0);
+
+    println!(
+        "{}",
+        match code_gen(&drag_gesture_nodes.borrow(), TargetVersion::V0_6) {
+            Ok(string) => string,
+            Err(_) => "error".into(),
+        }
+    );
 
     let window = ApplicationWindow::builder()
         .application(app)
