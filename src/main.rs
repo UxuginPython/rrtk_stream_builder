@@ -281,14 +281,20 @@ fn main() -> glib::ExitCode {
     app.run()
 }
 fn build_ui(app: &Application) {
-    let none = Rc::new(RefCell::new(Node::new_none_getter()));
-    let quotient = Rc::new(RefCell::new(Node::new_quotient_stream()));
-    quotient.borrow_mut().inputs[0] = Some(Rc::clone(&none));
-
-    let drag_area = DragArea::new(500, 500);
+    let drag_area = DragArea::new(1000, 1000);
     let drag_info: Rc<RefCell<Option<DragInfo>>> = Rc::new(RefCell::new(None));
-
     let drag_gesture_nodes = Rc::new(RefCell::new(Vec::<Rc<RefCell<Node>>>::new()));
+    let my_drag_gesture_nodes = drag_gesture_nodes.clone();
+    let code_gen_process = move || {
+        println!(
+            "{}",
+            match code_gen(&my_drag_gesture_nodes.borrow(), TargetVersion::V0_6) {
+                Ok(string) => string,
+                Err(_) => "error".into(),
+            }
+        );
+    };
+
     let drag = GestureDrag::new();
     let my_drag_gesture_nodes = drag_gesture_nodes.clone();
     let my_drag_info = drag_info.clone();
@@ -305,9 +311,11 @@ fn build_ui(app: &Application) {
             }
         }
     });
+
     let my_drag_area = drag_area.clone();
     let my_drag_gesture_nodes = drag_gesture_nodes.clone();
     let my_drag_info = drag_info.clone();
+    let my_code_gen_process = code_gen_process.clone();
     drag.connect_drag_end(move |_gesture: &GestureDrag, x: f64, y: f64| {
         let my_drag_info_borrow = match my_drag_info.borrow().clone() {
             Some(x) => x,
@@ -326,47 +334,29 @@ fn build_ui(app: &Application) {
         }
         my_drag_area.queue_draw();
         *my_drag_info.borrow_mut() = None;
-        println!(
-            "{}",
-            match code_gen(&my_drag_gesture_nodes.borrow(), TargetVersion::V0_6) {
-                Ok(string) => string,
-                Err(_) => "error".into(),
-            }
-        );
+        my_code_gen_process();
     });
-    drag_area.add_controller(drag);
 
+    drag_area.add_controller(drag);
     let my_drag_area = drag_area.clone(); //This works like Rc, I think
     let my_drag_gesture_nodes = drag_gesture_nodes.clone();
     let push = move |node: Rc<RefCell<Node>>, x, y| {
         my_drag_area.push_rc_ref_cell(node.clone(), x, y);
         my_drag_gesture_nodes.borrow_mut().push(node);
+        code_gen_process();
     };
-
-    push(none, 100.0, 100.0);
-    push(quotient, 100.0, 200.0);
-
-    println!(
-        "{}",
-        match code_gen(&drag_gesture_nodes.borrow(), TargetVersion::V0_6) {
-            Ok(string) => string,
-            Err(_) => "error".into(),
-        }
-    );
 
     let button_box = button_box::make_button_box(push);
     let button_box_scroll = ScrolledWindow::builder()
         .child(&button_box)
         .width_request(200)
         .build();
-
     let node_area = Paned::builder()
         .orientation(Orientation::Horizontal)
         .start_child(&button_box_scroll)
         .end_child(&drag_area)
         .width_request(1200)
         .build();
-
     let window = ApplicationWindow::builder()
         .application(app)
         .child(&node_area)
