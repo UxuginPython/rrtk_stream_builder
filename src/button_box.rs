@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright 2024 UxuginPython
 use super::*;
 use gtk4::Button;
 pub fn make_button_box(
