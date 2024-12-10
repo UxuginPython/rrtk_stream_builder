@@ -11,6 +11,7 @@ use std::{
     rc::Rc,
 };
 mod button_box;
+mod node_constructors;
 const NODE_WIDTH: f64 = 200.0;
 const APP_ID: &str = "com.uxugin.rrtk_stream_builder";
 #[derive(Clone, Copy)]
@@ -58,47 +59,6 @@ impl Node {
     #[inline]
     fn get_draw_height(&self) -> f64 {
         max_partial_ord(30.0, 10.0 + 20.0 * self.inputs.len() as f64)
-    }
-    fn new_none_getter() -> Self {
-        Self::new(
-            "NoneGetter".into(),
-            0,
-            Box::new(
-                |target_version, var_name, _input_names| match target_version {
-                    TargetVersion::V0_3 => {
-                        "panic!(\"NoneGetter available in RRTK 0.4+\");\n".into()
-                    }
-                    TargetVersion::V0_4 => {
-                        format!("let {} = make_input_getter(NoneGetter::new());\n", var_name)
-                    }
-                    TargetVersion::V0_5 | TargetVersion::V0_6 => {
-                        format!("let {} = static_reference!(NoneGetter::new());\n", var_name)
-                    }
-                },
-            ),
-        )
-    }
-    fn new_quotient_stream() -> Self {
-        Self::new(
-            "QuotientStream".into(),
-            2,
-            Box::new(
-                |target_version, var_name, input_names: Vec<String>| match target_version {
-                    TargetVersion::V0_3 => format!(
-                        "let {} = make_input_getter!(QuotientStream::new({}, {}), f32, E);\n",
-                        var_name, input_names[0], input_names[1]
-                    ),
-                    TargetVersion::V0_4 => format!(
-                        "let {} = make_input_getter(QuotientStream::new({}, {}));\n",
-                        var_name, input_names[0], input_names[1]
-                    ),
-                    TargetVersion::V0_5 | TargetVersion::V0_6 => format!(
-                        "let {} = static_reference!(QuotientStream::new({}, {}));\n",
-                        var_name, input_names[0], input_names[1]
-                    ),
-                },
-            ),
-        )
     }
     fn relative_in_output_terminal(&self, x: f64, y: f64) -> bool {
         x >= NODE_WIDTH - 20.0 && x <= NODE_WIDTH - 10.0 && y >= 10.0 && y <= 20.0
