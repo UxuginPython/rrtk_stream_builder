@@ -12,5 +12,5 @@ keywords = ["robotics", "nodes", "rrtk"]
 categories = ["science::robotics", "development-tools"]
 
 [dependencies]
-cairodrag = "0.1.0"
+cairodrag = "0.1.1"
 gtk4 = "0.9.4"

@@ -3,11 +3,14 @@
 use cairo::{Context, Error};
 use cairodrag::*;
 use gtk4::prelude::*;
-use gtk4::{cairo, glib, Application, ApplicationWindow, GestureDrag};
+use gtk4::{
+    cairo, glib, Application, ApplicationWindow, GestureDrag, Orientation, Paned, ScrolledWindow,
+};
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
 };
+mod button_box;
 const NODE_WIDTH: f64 = 200.0;
 const APP_ID: &str = "com.uxugin.rrtk_stream_builder";
 #[derive(Clone, Copy)]
@@ -333,9 +336,9 @@ fn build_ui(app: &Application) {
     });
     drag_area.add_controller(drag);
 
-    let mut my_drag_area = drag_area.clone(); //This works like Rc, I think
+    let my_drag_area = drag_area.clone(); //This works like Rc, I think
     let my_drag_gesture_nodes = drag_gesture_nodes.clone();
-    let mut push = move |node: Rc<RefCell<Node>>, x, y| {
+    let push = move |node: Rc<RefCell<Node>>, x, y| {
         my_drag_area.push_rc_ref_cell(node.clone(), x, y);
         my_drag_gesture_nodes.borrow_mut().push(node);
     };
@@ -351,9 +354,22 @@ fn build_ui(app: &Application) {
         }
     );
 
+    let button_box = button_box::make_button_box(push);
+    let button_box_scroll = ScrolledWindow::builder()
+        .child(&button_box)
+        .width_request(200)
+        .build();
+
+    let node_area = Paned::builder()
+        .orientation(Orientation::Horizontal)
+        .start_child(&button_box_scroll)
+        .end_child(&drag_area)
+        .width_request(1200)
+        .build();
+
     let window = ApplicationWindow::builder()
         .application(app)
-        .child(&drag_area)
+        .child(&node_area)
         .build();
     window.present();
 }
