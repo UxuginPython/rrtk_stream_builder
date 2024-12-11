@@ -46,6 +46,59 @@ impl Node {
             ),
         )
     }
+    pub fn new_expirer() -> Self {
+        Self::new(
+            "Expirer".into(),
+            1,
+            Box::new(
+                |target_version, var_name, input_names: Vec<String>| match target_version {
+                    TargetVersion::V0_3 => {
+                        "panic!(\"streams::Expirer available in RRTK 0.4+\");\n".into()
+                    }
+                    TargetVersion::V0_4 => {
+                        format!(
+                            "let {} = make_input_getter(Expirer::new({}, todo!(), todo!()));\n",
+                            var_name, input_names[0]
+                        )
+                    }
+                    TargetVersion::V0_5 | TargetVersion::V0_6 => {
+                        format!(
+                            "let {} = static_reference!(Expirer::new({}, todo!(), todo!()));\n",
+                            var_name, input_names[0]
+                        )
+                    }
+                },
+            ),
+        )
+    }
+    pub fn new_latest() -> Self {
+        Self::new(
+            "Latest".into(),
+            2,
+            Box::new(
+                |target_version, var_name, input_names: Vec<String>| match target_version {
+                    TargetVersion::V0_3 => {
+                        format!(
+                            "let {} = make_input_getter!(Latest::new([{}, {}]), T, E);\n",
+                            var_name, input_names[0], input_names[1]
+                        )
+                    }
+                    TargetVersion::V0_4 => {
+                        format!(
+                            "let {} = make_input_getter(Latest::new([{}, {}]));\n",
+                            var_name, input_names[0], input_names[1]
+                        )
+                    }
+                    TargetVersion::V0_5 | TargetVersion::V0_6 => {
+                        format!(
+                            "let {} = static_reference!(Latest::new([{}, {}]));\n",
+                            var_name, input_names[0], input_names[1]
+                        )
+                    }
+                },
+            ),
+        )
+    }
     pub fn new_quotient_stream() -> Self {
         Self::new(
             "QuotientStream".into(),
