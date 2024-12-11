@@ -4,8 +4,8 @@ use cairo::{Context, Error};
 use cairodrag::*;
 use gtk4::prelude::*;
 use gtk4::{
-    cairo, glib, Application, ApplicationWindow, GestureDrag, Orientation, Paned, ScrolledWindow,
-    TextBuffer, TextView,
+    cairo, glib, Application, ApplicationWindow, DropDown, GestureDrag, Orientation, Paned,
+    ScrolledWindow, TextBuffer, TextView,
 };
 use std::{
     cell::{Cell, RefCell},
@@ -245,6 +245,7 @@ fn build_ui(app: &Application) {
     let drag_area = DragArea::new(1000, 1000);
     let drag_info: Rc<RefCell<Option<DragInfo>>> = Rc::new(RefCell::new(None));
     let drag_gesture_nodes = Rc::new(RefCell::new(Vec::<Rc<RefCell<Node>>>::new()));
+    let target_version = Rc::new(Cell::new(TargetVersion::V0_6));
     let text_buffer = TextBuffer::new(None);
     let text_view = TextView::builder()
         .buffer(&text_buffer)
@@ -257,14 +258,36 @@ fn build_ui(app: &Application) {
         .width_request(700)
         .build();
     let my_drag_gesture_nodes = drag_gesture_nodes.clone();
+    let my_target_version = target_version.clone();
     let code_gen_process = move || {
-        text_buffer.set_text(
-            &match code_gen(&my_drag_gesture_nodes.borrow(), TargetVersion::V0_6) {
-                Ok(string) => string,
-                Err(_) => "error".into(),
-            },
-        );
+        text_buffer.set_text(&match code_gen(
+            &my_drag_gesture_nodes.borrow(),
+            my_target_version.get(),
+        ) {
+            Ok(string) => string,
+            Err(_) => "error".into(),
+        });
     };
+
+    let target_version_selector = DropDown::from_strings(&["0.3", "0.4", "0.5", "0.6"]);
+    target_version_selector.set_selected(3);
+    let my_target_version_selector = target_version_selector.clone();
+    let my_code_gen_process = code_gen_process.clone();
+    target_version_selector.connect_selected_notify(move |_| {
+        target_version.set(match my_target_version_selector.selected() {
+            0 => TargetVersion::V0_3,
+            1 => TargetVersion::V0_4,
+            2 => TargetVersion::V0_5,
+            3 => TargetVersion::V0_6,
+            _ => panic!("impossible value from target_version_selector"),
+        });
+        my_code_gen_process();
+    });
+    let output_box = gtk4::Box::builder()
+        .orientation(Orientation::Vertical)
+        .build();
+    output_box.append(&target_version_selector);
+    output_box.append(&text_view_scroll);
 
     let drag = GestureDrag::new();
     let my_drag_gesture_nodes = drag_gesture_nodes.clone();
@@ -331,7 +354,7 @@ fn build_ui(app: &Application) {
     let content = Paned::builder()
         .orientation(Orientation::Horizontal)
         .start_child(&node_area)
-        .end_child(&text_view_scroll)
+        .end_child(&output_box)
         .build();
     let window = ApplicationWindow::builder()
         .application(app)
