@@ -5,6 +5,7 @@ use cairodrag::*;
 use gtk4::prelude::*;
 use gtk4::{
     cairo, glib, Application, ApplicationWindow, GestureDrag, Orientation, Paned, ScrolledWindow,
+    TextBuffer, TextView,
 };
 use std::{
     cell::{Cell, RefCell},
@@ -244,14 +245,24 @@ fn build_ui(app: &Application) {
     let drag_area = DragArea::new(1000, 1000);
     let drag_info: Rc<RefCell<Option<DragInfo>>> = Rc::new(RefCell::new(None));
     let drag_gesture_nodes = Rc::new(RefCell::new(Vec::<Rc<RefCell<Node>>>::new()));
+    let text_buffer = TextBuffer::new(None);
+    let text_view = TextView::builder()
+        .buffer(&text_buffer)
+        .monospace(true) //This doesn't seem to work?
+        .editable(false)
+        .vexpand(true)
+        .build();
+    let text_view_scroll = ScrolledWindow::builder()
+        .child(&text_view)
+        .width_request(700)
+        .build();
     let my_drag_gesture_nodes = drag_gesture_nodes.clone();
     let code_gen_process = move || {
-        println!(
-            "{}",
-            match code_gen(&my_drag_gesture_nodes.borrow(), TargetVersion::V0_6) {
+        text_buffer.set_text(
+            &match code_gen(&my_drag_gesture_nodes.borrow(), TargetVersion::V0_6) {
                 Ok(string) => string,
                 Err(_) => "error".into(),
-            }
+            },
         );
     };
 
@@ -317,9 +328,14 @@ fn build_ui(app: &Application) {
         .end_child(&drag_area)
         .width_request(1200)
         .build();
+    let content = Paned::builder()
+        .orientation(Orientation::Horizontal)
+        .start_child(&node_area)
+        .end_child(&text_view_scroll)
+        .build();
     let window = ApplicationWindow::builder()
         .application(app)
-        .child(&node_area)
+        .child(&content)
         .build();
     window.present();
 }
