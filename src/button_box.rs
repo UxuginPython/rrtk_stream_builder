@@ -9,6 +9,17 @@ pub fn make_button_box(
         .orientation(Orientation::Vertical)
         .build();
 
+    let constant_getter_button = Button::builder().label("ConstantGetter").build();
+    let my_push = push.clone();
+    constant_getter_button.connect_clicked(move |_| {
+        my_push(
+            Rc::new(RefCell::new(Node::new_constant_getter())),
+            100.0,
+            100.0,
+        )
+    });
+    button_box.append(&constant_getter_button);
+
     let none_getter_button = Button::builder().label("NoneGetter").build();
     let my_push = push.clone();
     none_getter_button.connect_clicked(move |_| {

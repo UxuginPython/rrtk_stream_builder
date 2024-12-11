@@ -2,6 +2,31 @@
 // Copyright 2024 UxuginPython
 use super::*;
 impl Node {
+    pub fn new_constant_getter() -> Self {
+        Self::new(
+            "ConstantGetter".into(),
+            0,
+            Box::new(
+                |target_version, var_name, _input_names| match target_version {
+                    TargetVersion::V0_3 => {
+                        format!("let {} = make_input_getter!(ConstantGetter::new(todo!(), todo!()), T, E);\n", var_name)
+                    }
+                    TargetVersion::V0_4 => {
+                        format!(
+                            "let {} = make_input_getter(ConstantGetter::new(todo!(), todo!()));\n",
+                            var_name
+                        )
+                    }
+                    TargetVersion::V0_5 | TargetVersion::V0_6 => {
+                        format!(
+                            "let {} = static_reference!(ConstantGetter::new(todo!(), todo!()));\n",
+                            var_name
+                        )
+                    }
+                },
+            ),
+        )
+    }
     pub fn new_none_getter() -> Self {
         Self::new(
             "NoneGetter".into(),
