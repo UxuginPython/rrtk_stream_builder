@@ -1,11 +1,12 @@
+#![allow(unused)]
 use super::*;
 pub mod path {
     use super::*;
     #[derive(Clone, Copy)]
     pub enum Crate {
-        Streams(Streams),
         ConstantGetter,
         NoneGetter,
+        Streams(Streams),
     }
     #[derive(Clone, Copy)]
     pub enum Streams {
@@ -16,61 +17,54 @@ pub mod path {
 pub mod scope {
     use super::*;
     pub struct Crate {
+        constant_getter: ConstantGetter,
+        none_getter: NoneGetter,
         streams: Streams,
-        streams_in_scope: bool,
-        constant_getter_in_scope: bool,
-        none_getter_in_scope: bool,
+    }
+    struct ConstantGetter {
+        self_in_scope: bool,
+    }
+    struct NoneGetter {
+        self_in_scope: bool,
     }
     struct Streams {
+        self_in_scope: bool,
         expirer_in_scope: bool,
         latest_in_scope: bool,
     }
     impl Crate {
         pub fn string_path(&self, path: path::Crate) -> String {
+            let crate_path: String = "rrtk::".into();
             match path {
-                path::Crate::Streams(streams_type) => {
-                    let module_path: String = if self.streams_in_scope {
-                        "streams::".into()
-                    } else {
-                        "rrtk::streams::".into()
-                    };
-                    self.streams.string_path(module_path, streams_type)
-                }
-                path::Crate::ConstantGetter => {
-                    if self.constant_getter_in_scope {
-                        "ConstantGetter".into()
-                    } else {
-                        "rrtk::ConstantGetter".into()
-                    }
-                }
-                path::Crate::NoneGetter => {
-                    if self.none_getter_in_scope {
-                        "NoneGetter".into()
-                    } else {
-                        "rrtk::NoneGetter".into()
-                    }
-                }
+                path::Crate::ConstantGetter => self.constant_getter.string_path(crate_path),
+                path::Crate::NoneGetter => self.none_getter.string_path(crate_path),
+                path::Crate::Streams(stream_type) => self.streams.string_path(crate_path, stream_type),
+            }
+        }
+    }
+    impl ConstantGetter {
+        fn string_path(&self, super_path: String) -> String {
+            let name = "ConstantGetter";
+            if self.self_in_scope {
+                name.into()
+            } else {
+                super_path + name
+            }
+        }
+    }
+    impl NoneGetter {
+        fn string_path(&self, super_path: String) -> String {
+            let name = "NoneGetter";
+            if self.self_in_scope {
+                name.into()
+            } else {
+                super_path + name
             }
         }
     }
     impl Streams {
-        fn string_path(&self, module_path: String, path: path::Streams) -> String {
-            match path {
-                path::Streams::Expirer => {
-                    if self.expirer_in_scope {
-                        "Expirer".into()
-                    } else {
-                        module_path + "Expirer".into()
-                    }
-                }
-                path::Streams::Latest => {
-                    if self.latest_in_scope {
-                        "Latest".into()
-                    } else {
-                        module_path + "Latest".into()
-                    }
-                }
-            }
+        fn string_path(&self, super_path: String, path: path::Streams) -> String {
+            todo!();
         }
     }
 }
