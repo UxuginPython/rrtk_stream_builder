@@ -38,13 +38,15 @@ struct Node {
     y: Cell<f64>,
     var_name: Option<String>,
     // |my_var_name: String, input_var_names: Vec<String>| {line_of_code}
-    generate_func: Box<dyn Fn(TargetVersion, String, Vec<String>) -> String>,
+    generate_func: Box<dyn Fn(TargetVersion, &scope::Crate, String, Vec<String>) -> String>,
 }
 impl Node {
     fn new(
         type_name: String,
         input_count: usize,
-        generate_func: Box<impl Fn(TargetVersion, String, Vec<String>) -> String + 'static>,
+        generate_func: Box<
+            impl Fn(TargetVersion, &scope::Crate, String, Vec<String>) -> String + 'static,
+        >,
     ) -> Self {
         Self {
             type_name: type_name,
@@ -53,7 +55,7 @@ impl Node {
             y: Cell::new(0.0),
             var_name: None,
             generate_func: generate_func
-                as Box<dyn Fn(TargetVersion, String, Vec<String>) -> String>,
+                as Box<dyn Fn(TargetVersion, &scope::Crate, String, Vec<String>) -> String>,
         }
     }
     fn get_output_coords(&self) -> (f64, f64) {
@@ -173,6 +175,7 @@ struct NodeLoopError;
 fn code_gen_one(
     node: Rc<RefCell<Node>>,
     target_version: TargetVersion,
+    scope: &scope::Crate,
     next_number: &mut u32,
 ) -> Result<String, NodeLoopError> {
     let mut node_borrow = match node.try_borrow_mut() {
@@ -186,12 +189,15 @@ fn code_gen_one(
     for input in &node_borrow.inputs {
         match input {
             Some(input) => {
-                output.push_str(
-                    &match code_gen_one(input.clone(), target_version, next_number) {
-                        Ok(string) => string,
-                        Err(error) => return Err(error),
-                    },
-                );
+                output.push_str(&match code_gen_one(
+                    input.clone(),
+                    target_version,
+                    scope,
+                    next_number,
+                ) {
+                    Ok(string) => string,
+                    Err(error) => return Err(error),
+                });
             }
             None => {}
         }
@@ -208,6 +214,7 @@ fn code_gen_one(
     debug_assert_eq!(input_var_names.len(), node_borrow.inputs.len());
     output.push_str(&(node_borrow.generate_func)(
         target_version,
+        scope,
         node_borrow.var_name.clone().unwrap(),
         input_var_names,
     ));
@@ -216,6 +223,7 @@ fn code_gen_one(
 fn code_gen(
     nodes: &Vec<Rc<RefCell<Node>>>,
     target_version: TargetVersion,
+    scope: &scope::Crate,
 ) -> Result<String, NodeLoopError> {
     for node in nodes {
         node.borrow_mut().var_name = None;
@@ -224,7 +232,7 @@ fn code_gen(
     let mut output = String::new();
     for node in nodes {
         output.push_str(
-            &match code_gen_one(node.clone(), target_version, &mut next_number) {
+            &match code_gen_one(node.clone(), target_version, scope, &mut next_number) {
                 Ok(string) => string,
                 Err(error) => return Err(error),
             },
@@ -248,6 +256,7 @@ fn build_ui(app: &Application) {
     let drag_info: Rc<RefCell<Option<DragInfo>>> = Rc::new(RefCell::new(None));
     let drag_gesture_nodes = Rc::new(RefCell::new(Vec::<Rc<RefCell<Node>>>::new()));
     let target_version = Rc::new(Cell::new(TargetVersion::V0_6));
+    let scope = Rc::new(RefCell::new(scope::Crate::new()));
     let text_buffer = TextBuffer::new(None);
     let text_view = TextView::builder()
         .buffer(&text_buffer)
@@ -261,10 +270,12 @@ fn build_ui(app: &Application) {
         .build();
     let my_drag_gesture_nodes = drag_gesture_nodes.clone();
     let my_target_version = target_version.clone();
+    let my_scope = scope.clone();
     let code_gen_process = move || {
         text_buffer.set_text(&match code_gen(
             &my_drag_gesture_nodes.borrow(),
             my_target_version.get(),
+            &my_scope.borrow(),
         ) {
             Ok(string) => string,
             Err(_) => "error".into(),

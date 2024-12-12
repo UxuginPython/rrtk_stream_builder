@@ -6,6 +6,13 @@ pub struct Crate {
     streams: Streams,
 }
 impl Crate {
+    pub fn new() -> Self {
+        Self {
+            constant_getter: ConstantGetter::new(),
+            none_getter: NoneGetter::new(),
+            streams: Streams::new(),
+        }
+    }
     pub fn string_path(&self, path: path::Crate) -> String {
         let crate_path: String = "rrtk::".into();
         match path {
@@ -19,6 +26,11 @@ struct ConstantGetter {
     self_in_scope: bool,
 }
 impl ConstantGetter {
+    fn new() -> Self {
+        Self {
+            self_in_scope: false,
+        }
+    }
     fn string_path(&self, super_path: String) -> String {
         let name = "ConstantGetter";
         if self.self_in_scope {
@@ -32,6 +44,11 @@ struct NoneGetter {
     self_in_scope: bool,
 }
 impl NoneGetter {
+    fn new() -> Self {
+        Self {
+            self_in_scope: false,
+        }
+    }
     fn string_path(&self, super_path: String) -> String {
         let name = "NoneGetter";
         if self.self_in_scope {
@@ -47,6 +64,13 @@ struct Streams {
     latest: streams::Latest,
 }
 impl Streams {
+    fn new() -> Self {
+        Self {
+            self_in_scope: false,
+            expirer: streams::Expirer::new(),
+            latest: streams::Latest::new(),
+        }
+    }
     fn string_path(&self, super_path: String, path: path::Streams) -> String {
         let name = "streams::";
         let name: String = if self.self_in_scope {
@@ -65,6 +89,11 @@ mod streams {
         self_in_scope: bool,
     }
     impl Expirer {
+        pub fn new() -> Self {
+            Self {
+                self_in_scope: false,
+            }
+        }
         pub fn string_path(&self, super_path: String) -> String {
             let name = "Expirer";
             if self.self_in_scope {
@@ -78,6 +107,11 @@ mod streams {
         self_in_scope: bool,
     }
     impl Latest {
+        pub fn new() -> Self {
+            Self {
+                self_in_scope: false,
+            }
+        }
         pub fn string_path(&self, super_path: String) -> String {
             let name = "Latest";
             if self.self_in_scope {
