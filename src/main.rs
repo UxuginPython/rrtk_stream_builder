@@ -13,6 +13,7 @@ use std::{
 };
 mod button_box;
 mod node_constructors;
+mod scope;
 const NODE_WIDTH: f64 = 200.0;
 const APP_ID: &str = "com.uxugin.rrtk_stream_builder";
 #[derive(Clone, Copy)]
