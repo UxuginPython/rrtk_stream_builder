@@ -62,6 +62,7 @@ struct Streams {
     self_in_scope: bool,
     expirer: streams::Expirer,
     latest: streams::Latest,
+    control: streams::Control,
 }
 impl Streams {
     fn new() -> Self {
@@ -69,6 +70,7 @@ impl Streams {
             self_in_scope: false,
             expirer: streams::Expirer::new(),
             latest: streams::Latest::new(),
+            control: streams::Control::new(),
         }
     }
     fn string_path(&self, super_path: String, path: path::Streams) -> String {
@@ -118,6 +120,98 @@ mod streams {
                 name.into()
             } else {
                 super_path + name
+            }
+        }
+    }
+    pub struct Control {
+        self_in_scope: bool,
+        command_pid: control::CommandPID,
+        ewma_stream: control::EWMAStream,
+        moving_average_stream: control::MovingAverageStream,
+        pid_controller_stream: control::PIDControllerStream,
+    }
+    impl Control {
+        pub fn new() -> Self {
+            Self {
+                self_in_scope: false,
+                command_pid: control::CommandPID::new(),
+                ewma_stream: control::EWMAStream::new(),
+                moving_average_stream: control::MovingAverageStream::new(),
+                pid_controller_stream: control::PIDControllerStream::new(),
+            }
+        }
+    }
+    mod control {
+        pub struct CommandPID {
+            self_in_scope: bool,
+        }
+        impl CommandPID {
+            pub fn new() -> Self {
+                Self {
+                    self_in_scope: false,
+                }
+            }
+            pub fn string_path(&self, super_path: String) -> String {
+                let name = "CommandPID";
+                if self.self_in_scope {
+                    name.into()
+                } else {
+                    super_path + name
+                }
+            }
+        }
+        pub struct EWMAStream {
+            self_in_scope: bool,
+        }
+        impl EWMAStream {
+            pub fn new() -> Self {
+                Self {
+                    self_in_scope: false,
+                }
+            }
+            pub fn string_path(&self, super_path: String) -> String {
+                let name = "EWMAStream";
+                if self.self_in_scope {
+                    name.into()
+                } else {
+                    super_path + name
+                }
+            }
+        }
+        pub struct MovingAverageStream {
+            self_in_scope: bool,
+        }
+        impl MovingAverageStream {
+            pub fn new() -> Self {
+                Self {
+                    self_in_scope: false,
+                }
+            }
+            pub fn string_path(&self, super_path: String) -> String {
+                let name = "MovingAverageStream";
+                if self.self_in_scope {
+                    name.into()
+                } else {
+                    super_path + name
+                }
+            }
+        }
+        pub struct PIDControllerStream {
+            self_in_scope: bool,
+        }
+        impl PIDControllerStream {
+            pub fn new() -> Self {
+                Self {
+                    self_in_scope: false,
+                }
+            }
+            pub fn string_path(&self, super_path: String) -> String {
+                let name = "PIDControllerStream";
+                if self.self_in_scope {
+                    name.into()
+                } else {
+                    super_path + name
+                }
             }
         }
     }
