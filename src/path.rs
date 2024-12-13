@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright 2024 UxuginPython
 #![allow(unused)]
 use super::*;
 #[derive(Clone, Copy)]

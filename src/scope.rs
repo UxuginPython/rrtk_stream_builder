@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright 2024 UxuginPython
 #![allow(unused)]
 use super::*;
 fn reduce(super_path: String, name: &str, in_scope: bool) -> String {
