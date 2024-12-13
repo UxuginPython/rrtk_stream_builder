@@ -132,6 +132,168 @@ impl Node {
             ),
         )
     }
+    pub fn new_command_pid() -> Self {
+        Self::new(
+            "CommandPID".into(),
+            1,
+            Box::new(
+                |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
+                    match target_version {
+                        TargetVersion::V0_3 => {
+                            "panic!(\"streams::control::CommandPID available in RRTK 0.4+\");\n"
+                                .into()
+                        }
+                        TargetVersion::V0_4 => {
+                            format!(
+                                "let {} = make_input_getter({}::new({}, todo!(), todo!()));\n",
+                                var_name,
+                                scope.string_path(path::Crate::Streams(path::Streams::Control(
+                                    path::streams::Control::CommandPID
+                                ))),
+                                input_names[0],
+                            )
+                        }
+                        TargetVersion::V0_5 | TargetVersion::V0_6 => {
+                            format!(
+                                "let {} = static_reference!({}::new({}, todo!(), todo!()));\n",
+                                var_name,
+                                scope.string_path(path::Crate::Streams(path::Streams::Control(
+                                    path::streams::Control::CommandPID
+                                ))),
+                                input_names[0],
+                            )
+                        }
+                    }
+                },
+            ),
+        )
+    }
+    pub fn new_ewma_stream() -> Self {
+        Self::new(
+            "EWMAStream".into(),
+            1,
+            Box::new(
+                |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
+                    match target_version {
+                        TargetVersion::V0_3 => {
+                            format!(
+                                "let {} = make_input_getter!({}::new({}, todo!()), f32, E);\n",
+                                var_name,
+                                scope.string_path(path::Crate::Streams(path::Streams::Control(
+                                    path::streams::Control::EWMAStream
+                                ))),
+                                input_names[0],
+                            )
+                        }
+                        TargetVersion::V0_4 => {
+                            format!(
+                                "let {} = make_input_getter({}::new({}, todo!()));\n",
+                                var_name,
+                                scope.string_path(path::Crate::Streams(path::Streams::Control(
+                                    path::streams::Control::EWMAStream
+                                ))),
+                                input_names[0],
+                            )
+                        }
+                        TargetVersion::V0_5 | TargetVersion::V0_6 => {
+                            format!(
+                                "let {} = static_reference!({}::new({}, todo!()));\n",
+                                var_name,
+                                scope.string_path(path::Crate::Streams(path::Streams::Control(
+                                    path::streams::Control::EWMAStream
+                                ))),
+                                input_names[0],
+                            )
+                        }
+                    }
+                },
+            ),
+        )
+    }
+    pub fn new_moving_average_stream() -> Self {
+        Self::new(
+            "MovingAverageStream".into(),
+            1,
+            Box::new(
+                |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
+                    match target_version {
+                        TargetVersion::V0_3 => {
+                            format!(
+                                "let {} = make_input_getter!({}::new({}, todo!()), f32, E);\n",
+                                var_name,
+                                scope.string_path(path::Crate::Streams(path::Streams::Control(
+                                    path::streams::Control::EWMAStream
+                                ))),
+                                input_names[0],
+                            )
+                        }
+                        TargetVersion::V0_4 => {
+                            format!(
+                                "let {} = make_input_getter({}::new({}, todo!()));\n",
+                                var_name,
+                                scope.string_path(path::Crate::Streams(path::Streams::Control(
+                                    path::streams::Control::EWMAStream
+                                ))),
+                                input_names[0],
+                            )
+                        }
+                        TargetVersion::V0_5 | TargetVersion::V0_6 => {
+                            format!(
+                                "let {} = static_reference!({}::new({}, todo!()));\n",
+                                var_name,
+                                scope.string_path(path::Crate::Streams(path::Streams::Control(
+                                    path::streams::Control::EWMAStream
+                                ))),
+                                input_names[0],
+                            )
+                        }
+                    }
+                },
+            ),
+        )
+    }
+    pub fn new_pid_controller_stream() -> Self {
+        Self::new(
+            "PIDControllerStream".into(),
+            1,
+            Box::new(
+                |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
+                    match target_version {
+                        TargetVersion::V0_3 => {
+                            format!(
+                                "let {} = make_input_getter!({}::new({}, todo!(), todo!()), f32, E);\n",
+                                var_name,
+                                scope.string_path(path::Crate::Streams(path::Streams::Control(
+                                    path::streams::Control::PIDControllerStream
+                                ))),
+                                input_names[0],
+                            )
+                        }
+                        TargetVersion::V0_4 => {
+                            format!(
+                                "let {} = make_input_getter({}::new({}, todo!(), todo!()));\n",
+                                var_name,
+                                scope.string_path(path::Crate::Streams(path::Streams::Control(
+                                    path::streams::Control::PIDControllerStream
+                                ))),
+                                input_names[0],
+                            )
+                        }
+                        TargetVersion::V0_5 | TargetVersion::V0_6 => {
+                            format!(
+                                "let {} = static_reference!({}::new({}, todo!(), todo!()));\n",
+                                var_name,
+                                scope.string_path(path::Crate::Streams(path::Streams::Control(
+                                    path::streams::Control::PIDControllerStream
+                                ))),
+                                input_names[0],
+                            )
+                        }
+                    }
+                },
+            ),
+        )
+    }
     pub fn new_quotient_stream() -> Self {
         Self::new(
             "QuotientStream".into(),
