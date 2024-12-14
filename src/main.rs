@@ -4,8 +4,8 @@ use cairo::{Context, Error};
 use cairodrag::*;
 use gtk4::prelude::*;
 use gtk4::{
-    cairo, glib, Application, ApplicationWindow, DropDown, GestureDrag, Orientation, Paned,
-    ScrolledWindow, TextBuffer, TextView,
+    cairo, glib, Application, ApplicationWindow, DropDown, GestureClick, GestureDrag, Orientation,
+    Paned, ScrolledWindow, TextBuffer, TextView,
 };
 use std::{
     cell::{Cell, RefCell},
@@ -39,6 +39,7 @@ struct Node {
     var_name: Option<String>,
     // |my_var_name: String, input_var_names: Vec<String>| {line_of_code}
     generate_func: Box<dyn Fn(TargetVersion, &scope::Crate, String, Vec<String>) -> String>,
+    retain: Cell<bool>,
 }
 impl Node {
     fn new(
@@ -56,6 +57,7 @@ impl Node {
             var_name: None,
             generate_func: generate_func
                 as Box<dyn Fn(TargetVersion, &scope::Crate, String, Vec<String>) -> String>,
+            retain: Cell::new(true),
         }
     }
     fn get_output_coords(&self) -> (f64, f64) {
@@ -169,6 +171,13 @@ impl Draggable for Node {
         //If it's in the gray rectangle, it's not in the output terminal, and it's not in an input terminal, true.
         true
     }
+    fn retain(&self) -> bool {
+        self.retain.get()
+    }
+    fn on_middle_click(&self) {
+        println!("deleting middle click");
+        self.retain.set(false);
+    }
 }
 #[derive(Debug)]
 struct NodeLoopError;
@@ -272,6 +281,9 @@ fn build_ui(app: &Application) {
     let my_target_version = target_version.clone();
     let my_scope = scope.clone();
     let code_gen_process = move || {
+        my_drag_gesture_nodes
+            .borrow_mut()
+            .retain(|node| node.borrow().retain());
         text_buffer.set_text(&match code_gen(
             &my_drag_gesture_nodes.borrow(),
             my_target_version.get(),
@@ -345,6 +357,18 @@ fn build_ui(app: &Application) {
     });
 
     drag_area.add_controller(drag);
+
+    let middle_click = GestureClick::new();
+    middle_click.set_button(2);
+    let my_code_gen_process = code_gen_process.clone();
+    middle_click.connect_pressed(move |_, clicks, x, y| {
+        println!("canvase thing middle click");
+        if clicks == 1 {
+            my_code_gen_process();
+        }
+    });
+    drag_area.add_controller(middle_click);
+
     let my_drag_area = drag_area.clone(); //This works like Rc, I think
     let my_drag_gesture_nodes = drag_gesture_nodes.clone();
     let push = move |node: Rc<RefCell<Node>>, x, y| {
