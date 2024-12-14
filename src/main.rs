@@ -4,8 +4,8 @@ use cairo::{Context, Error};
 use cairodrag::*;
 use gtk4::prelude::*;
 use gtk4::{
-    cairo, glib, Application, ApplicationWindow, DropDown, GestureClick, GestureDrag, Orientation,
-    Paned, ScrolledWindow, TextBuffer, TextView,
+    cairo, glib, Application, ApplicationWindow, DropDown, GestureDrag, Orientation, Paned,
+    ScrolledWindow, TextBuffer, TextView,
 };
 use std::{
     cell::{Cell, RefCell},
@@ -175,7 +175,6 @@ impl Draggable for Node {
         self.retain.get()
     }
     fn on_middle_click(&self) {
-        println!("deleting middle click");
         self.retain.set(false);
     }
 }
@@ -293,6 +292,7 @@ fn build_ui(app: &Application) {
             Err(_) => "error".into(),
         });
     };
+    drag_area.set_pre_draw_func(code_gen_process.clone());
 
     let target_version_selector = DropDown::from_strings(&["0.3", "0.4", "0.5", "0.6"]);
     target_version_selector.set_selected(3);
@@ -357,18 +357,6 @@ fn build_ui(app: &Application) {
     });
 
     drag_area.add_controller(drag);
-
-    let middle_click = GestureClick::new();
-    middle_click.set_button(2);
-    let my_code_gen_process = code_gen_process.clone();
-    middle_click.connect_pressed(move |_, clicks, x, y| {
-        println!("canvase thing middle click");
-        if clicks == 1 {
-            my_code_gen_process();
-        }
-    });
-    drag_area.add_controller(middle_click);
-
     let my_drag_area = drag_area.clone(); //This works like Rc, I think
     let my_drag_gesture_nodes = drag_gesture_nodes.clone();
     let push = move |node: Rc<RefCell<Node>>, x, y| {
