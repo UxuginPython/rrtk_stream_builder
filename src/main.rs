@@ -171,6 +171,9 @@ impl Draggable for Node {
         //If it's in the gray rectangle, it's not in the output terminal, and it's not in an input terminal, true.
         true
     }
+    fn can_scroll(&self, x: f64, y: f64) -> bool {
+        x < 0.0 || x > NODE_WIDTH || y < 0.0 || y > self.get_draw_height()
+    }
     fn retain(&self) -> bool {
         self.retain.get()
     }
@@ -260,7 +263,7 @@ fn main() -> glib::ExitCode {
     app.run()
 }
 fn build_ui(app: &Application) {
-    let drag_area = DragArea::new(1000, 1000);
+    let drag_area = DragArea::new_scrollable(1000, 1000);
     let drag_info: Rc<RefCell<Option<DragInfo>>> = Rc::new(RefCell::new(None));
     let drag_gesture_nodes = Rc::new(RefCell::new(Vec::<Rc<RefCell<Node>>>::new()));
     let target_version = Rc::new(Cell::new(TargetVersion::V0_6));
