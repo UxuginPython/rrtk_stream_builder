@@ -42,7 +42,10 @@ impl Node {
                 |target_version, scope: &scope::Crate, var_name, _input_names| match target_version
                 {
                     TargetVersion::V0_3 => {
-                        "panic!(\"NoneGetter available in RRTK 0.4+\");\n".into()
+                        format!(
+                            "let {} = panic!(\"NoneGetter available in RRTK 0.4+\");\n",
+                            var_name
+                        )
                     }
                     TargetVersion::V0_4 => {
                         format!(
@@ -70,7 +73,10 @@ impl Node {
                 |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
                     match target_version {
                         TargetVersion::V0_3 => {
-                            "panic!(\"streams::Expirer available in RRTK 0.4+\");\n".into()
+                            format!(
+                                "let {} = panic!(\"streams::Expirer available in RRTK 0.4+\");\n",
+                                var_name
+                            )
                         }
                         TargetVersion::V0_4 => {
                             format!(
@@ -140,8 +146,7 @@ impl Node {
                 |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
                     match target_version {
                         TargetVersion::V0_3 => {
-                            "panic!(\"streams::control::CommandPID available in RRTK 0.4+\");\n"
-                                .into()
+                            format!("let {} = panic!(\"streams::control::CommandPID available in RRTK 0.4+\");\n", var_name)
                         }
                         TargetVersion::V0_4 => {
                             format!(
@@ -482,7 +487,10 @@ impl Node {
                 |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
                     match target_version {
                         TargetVersion::V0_3 | TargetVersion::V0_4 | TargetVersion::V0_5 => {
-                            "panic!(\"FloatToQuantity available in RRTK 0.6+\");\n".into()
+                            format!(
+                                "let {} = panic!(\"FloatToQuantity available in RRTK 0.6+\");\n",
+                                var_name
+                            )
                         }
                         TargetVersion::V0_6 => format!(
                             "let {} = static_reference!({}::new(todo!(), {}));\n",
@@ -505,7 +513,10 @@ impl Node {
                 |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
                     match target_version {
                         TargetVersion::V0_3 | TargetVersion::V0_4 | TargetVersion::V0_5 => {
-                            "panic!(\"QuantityToFloat available in RRTK 0.6+\");\n".into()
+                            format!(
+                                "let {} = panic!(\"QuantityToFloat available in RRTK 0.6+\");\n",
+                                var_name
+                            )
                         }
                         TargetVersion::V0_6 => format!(
                             "let {} = static_reference!({}::new({}));\n",
