@@ -13,6 +13,7 @@ pub enum Streams {
     Expirer,
     Latest,
     Control(streams::Control),
+    Converters(streams::Converters),
 }
 pub mod streams {
     #[derive(Clone, Copy)]
@@ -21,5 +22,15 @@ pub mod streams {
         EWMAStream,
         MovingAverageStream,
         PIDControllerStream,
+    }
+    #[derive(Clone, Copy)]
+    pub enum Converters {
+        PositionToState,
+        VelocityToState,
+        AccelerationToState,
+        NoneToError,
+        NoneToValue,
+        FloatToQuantity,
+        QuantityToFloat,
     }
 }

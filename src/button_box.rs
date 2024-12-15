@@ -85,6 +85,86 @@ pub fn make_button_box(
     });
     button_box.append(&pid_controller_stream_button);
 
+    let converters_label = Label::builder().label("rrtk::streams::converters").build();
+    button_box.append(&converters_label);
+
+    let position_to_state_button = Button::builder().label("PositionToState").build();
+    let my_push = push.clone();
+    position_to_state_button.connect_clicked(move |_| {
+        my_push(
+            Rc::new(RefCell::new(Node::new_position_to_state())),
+            100.0,
+            100.0,
+        )
+    });
+    button_box.append(&position_to_state_button);
+
+    let velocity_to_state_button = Button::builder().label("VelocityToState").build();
+    let my_push = push.clone();
+    velocity_to_state_button.connect_clicked(move |_| {
+        my_push(
+            Rc::new(RefCell::new(Node::new_velocity_to_state())),
+            100.0,
+            100.0,
+        )
+    });
+    button_box.append(&velocity_to_state_button);
+
+    let acceleration_to_state_button = Button::builder().label("AccelerationToState").build();
+    let my_push = push.clone();
+    acceleration_to_state_button.connect_clicked(move |_| {
+        my_push(
+            Rc::new(RefCell::new(Node::new_acceleration_to_state())),
+            100.0,
+            100.0,
+        )
+    });
+    button_box.append(&acceleration_to_state_button);
+
+    let none_to_error_button = Button::builder().label("NoneToError").build();
+    let my_push = push.clone();
+    none_to_error_button.connect_clicked(move |_| {
+        my_push(
+            Rc::new(RefCell::new(Node::new_none_to_error())),
+            100.0,
+            100.0,
+        )
+    });
+    button_box.append(&none_to_error_button);
+
+    let none_to_value_button = Button::builder().label("NoneToValue").build();
+    let my_push = push.clone();
+    none_to_value_button.connect_clicked(move |_| {
+        my_push(
+            Rc::new(RefCell::new(Node::new_none_to_value())),
+            100.0,
+            100.0,
+        )
+    });
+    button_box.append(&none_to_value_button);
+
+    let float_to_quantity_button = Button::builder().label("FloatToQuantity").build();
+    let my_push = push.clone();
+    float_to_quantity_button.connect_clicked(move |_| {
+        my_push(
+            Rc::new(RefCell::new(Node::new_float_to_quantity())),
+            100.0,
+            100.0,
+        )
+    });
+    button_box.append(&float_to_quantity_button);
+
+    let quantity_to_float_button = Button::builder().label("QuantityToFloat").build();
+    let my_push = push.clone();
+    quantity_to_float_button.connect_clicked(move |_| {
+        my_push(
+            Rc::new(RefCell::new(Node::new_quantity_to_float())),
+            100.0,
+            100.0,
+        )
+    });
+    button_box.append(&quantity_to_float_button);
+
     let quotient_stream_button = Button::builder().label("QuotientStream").build();
     quotient_stream_button.connect_clicked(move |_| {
         push(

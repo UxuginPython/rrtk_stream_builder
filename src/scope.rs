@@ -38,6 +38,7 @@ struct Streams {
     expirer: bool,
     latest: bool,
     control: streams::Control,
+    converters: streams::Converters,
 }
 impl Streams {
     fn new() -> Self {
@@ -46,6 +47,7 @@ impl Streams {
             expirer: false,
             latest: false,
             control: streams::Control::new(),
+            converters: streams::Converters::new(),
         }
     }
     fn string_path(&self, super_path: String, path: path::Streams) -> String {
@@ -54,6 +56,9 @@ impl Streams {
             path::Streams::Expirer => reduce(name, "Expirer", self.expirer),
             path::Streams::Latest => reduce(name, "Latest", self.latest),
             path::Streams::Control(stream_type) => self.control.string_path(name, stream_type),
+            path::Streams::Converters(stream_type) => {
+                self.converters.string_path(name, stream_type)
+            }
         }
     }
 }
@@ -86,6 +91,56 @@ mod streams {
                 }
                 path::streams::Control::PIDControllerStream => {
                     reduce(name, "PIDControllerStream", self.pid_controller_stream)
+                }
+            }
+        }
+    }
+    pub struct Converters {
+        self_in_scope: bool,
+        position_to_state: bool,
+        velocity_to_state: bool,
+        acceleration_to_state: bool,
+        none_to_error: bool,
+        none_to_value: bool,
+        float_to_quantity: bool,
+        quantity_to_float: bool,
+    }
+    impl Converters {
+        pub fn new() -> Self {
+            Self {
+                self_in_scope: false,
+                position_to_state: false,
+                velocity_to_state: false,
+                acceleration_to_state: false,
+                none_to_error: false,
+                none_to_value: false,
+                float_to_quantity: false,
+                quantity_to_float: false,
+            }
+        }
+        pub fn string_path(&self, super_path: String, path: path::streams::Converters) -> String {
+            let name = reduce(super_path, "converters::", self.self_in_scope);
+            match path {
+                path::streams::Converters::PositionToState => {
+                    reduce(name, "PositionToState", self.position_to_state)
+                }
+                path::streams::Converters::VelocityToState => {
+                    reduce(name, "VelocityToState", self.velocity_to_state)
+                }
+                path::streams::Converters::AccelerationToState => {
+                    reduce(name, "AccelerationToState", self.acceleration_to_state)
+                }
+                path::streams::Converters::NoneToError => {
+                    reduce(name, "NoneToError", self.none_to_error)
+                }
+                path::streams::Converters::NoneToValue => {
+                    reduce(name, "NoneToValue", self.none_to_value)
+                }
+                path::streams::Converters::FloatToQuantity => {
+                    reduce(name, "FloatToQuantity", self.float_to_quantity)
+                }
+                path::streams::Converters::QuantityToFloat => {
+                    reduce(name, "QuantityToFloat", self.quantity_to_float)
                 }
             }
         }
