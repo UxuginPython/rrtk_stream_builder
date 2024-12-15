@@ -197,18 +197,22 @@ fn code_gen_one(
         return Ok(String::new());
     }
     let mut output = String::new();
-    for input in &node_borrow.inputs {
-        match input {
+    for maybe_input in &mut node_borrow.inputs {
+        match maybe_input {
             Some(input) => {
-                output.push_str(&match code_gen_one(
-                    input.clone(),
-                    target_version,
-                    scope,
-                    next_number,
-                ) {
-                    Ok(string) => string,
-                    Err(error) => return Err(error),
-                });
+                if input.borrow().retain.get() {
+                    output.push_str(&match code_gen_one(
+                        input.clone(),
+                        target_version,
+                        scope,
+                        next_number,
+                    ) {
+                        Ok(string) => string,
+                        Err(error) => return Err(error),
+                    });
+                } else {
+                    *maybe_input = None;
+                }
             }
             None => {}
         }
