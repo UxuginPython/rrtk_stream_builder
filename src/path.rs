@@ -15,6 +15,7 @@ pub enum Streams {
     Control(streams::Control),
     Converters(streams::Converters),
     Flow(streams::Flow),
+    Logic(streams::Logic),
 }
 pub mod streams {
     #[derive(Clone, Copy)]
@@ -39,5 +40,11 @@ pub mod streams {
         FreezeStream,
         IfStream,
         IfElseStream,
+    }
+    #[derive(Clone, Copy)]
+    pub enum Logic {
+        AndStream,
+        OrStream,
+        NotStream,
     }
 }

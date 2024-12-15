@@ -197,6 +197,30 @@ pub fn make_button_box(
     });
     button_box.append(&if_else_stream_button);
 
+    let logic_label = Label::builder().label("rrtk::streams::logic").build();
+    button_box.append(&logic_label);
+
+    let and_stream_button = Button::builder().label("AndStream").build();
+    let my_push = push.clone();
+    and_stream_button.connect_clicked(move |_| {
+        my_push(Rc::new(RefCell::new(Node::new_and_stream())), 100.0, 100.0)
+    });
+    button_box.append(&and_stream_button);
+
+    let or_stream_button = Button::builder().label("OrStream").build();
+    let my_push = push.clone();
+    or_stream_button.connect_clicked(move |_| {
+        my_push(Rc::new(RefCell::new(Node::new_or_stream())), 100.0, 100.0)
+    });
+    button_box.append(&or_stream_button);
+
+    let not_stream_button = Button::builder().label("NotStream").build();
+    let my_push = push.clone();
+    not_stream_button.connect_clicked(move |_| {
+        my_push(Rc::new(RefCell::new(Node::new_not_stream())), 100.0, 100.0)
+    });
+    button_box.append(&not_stream_button);
+
     let quotient_stream_button = Button::builder().label("QuotientStream").build();
     quotient_stream_button.connect_clicked(move |_| {
         push(

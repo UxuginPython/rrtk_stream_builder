@@ -653,6 +653,124 @@ impl Node {
             ),
         )
     }
+    pub fn new_and_stream() -> Self {
+        Self::new(
+            "AndStream".into(),
+            2,
+            Box::new(
+                |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
+                    match target_version {
+                        TargetVersion::V0_3 => {
+                            format!(
+                                "let {} = panic!(\"AndStream available in RRTK 0.4+\");\n",
+                                var_name
+                            )
+                        }
+                        TargetVersion::V0_4 => {
+                            format!(
+                                "let {} = make_input_getter({}::new({}, {}));\n",
+                                var_name,
+                                scope.string_path(path::Crate::Streams(path::Streams::Logic(
+                                    path::streams::Logic::AndStream
+                                ))),
+                                input_names[0],
+                                input_names[1]
+                            )
+                        }
+                        TargetVersion::V0_5 | TargetVersion::V0_6 => {
+                            format!(
+                                "let {} = static_reference!({}::new({}, {}));\n",
+                                var_name,
+                                scope.string_path(path::Crate::Streams(path::Streams::Logic(
+                                    path::streams::Logic::AndStream
+                                ))),
+                                input_names[0],
+                                input_names[1]
+                            )
+                        }
+                    }
+                },
+            ),
+        )
+    }
+    pub fn new_or_stream() -> Self {
+        Self::new(
+            "OrStream".into(),
+            2,
+            Box::new(
+                |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
+                    match target_version {
+                        TargetVersion::V0_3 => {
+                            format!(
+                                "let {} = panic!(\"OrStream available in RRTK 0.4+\");\n",
+                                var_name
+                            )
+                        }
+                        TargetVersion::V0_4 => {
+                            format!(
+                                "let {} = make_input_getter({}::new({}, {}));\n",
+                                var_name,
+                                scope.string_path(path::Crate::Streams(path::Streams::Logic(
+                                    path::streams::Logic::OrStream
+                                ))),
+                                input_names[0],
+                                input_names[1]
+                            )
+                        }
+                        TargetVersion::V0_5 | TargetVersion::V0_6 => {
+                            format!(
+                                "let {} = static_reference!({}::new({}, {}));\n",
+                                var_name,
+                                scope.string_path(path::Crate::Streams(path::Streams::Logic(
+                                    path::streams::Logic::OrStream
+                                ))),
+                                input_names[0],
+                                input_names[1]
+                            )
+                        }
+                    }
+                },
+            ),
+        )
+    }
+    pub fn new_not_stream() -> Self {
+        Self::new(
+            "NotStream".into(),
+            1,
+            Box::new(
+                |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
+                    match target_version {
+                        TargetVersion::V0_3 => {
+                            format!(
+                                "let {} = panic!(\"NotStream available in RRTK 0.4+\");\n",
+                                var_name
+                            )
+                        }
+                        TargetVersion::V0_4 => {
+                            format!(
+                                "let {} = make_input_getter({}::new({}));\n",
+                                var_name,
+                                scope.string_path(path::Crate::Streams(path::Streams::Logic(
+                                    path::streams::Logic::NotStream
+                                ))),
+                                input_names[0],
+                            )
+                        }
+                        TargetVersion::V0_5 | TargetVersion::V0_6 => {
+                            format!(
+                                "let {} = static_reference!({}::new({}));\n",
+                                var_name,
+                                scope.string_path(path::Crate::Streams(path::Streams::Logic(
+                                    path::streams::Logic::NotStream
+                                ))),
+                                input_names[0],
+                            )
+                        }
+                    }
+                },
+            ),
+        )
+    }
     pub fn new_quotient_stream() -> Self {
         Self::new(
             "QuotientStream".into(),
