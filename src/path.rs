@@ -14,6 +14,7 @@ pub enum Streams {
     Latest,
     Control(streams::Control),
     Converters(streams::Converters),
+    Flow(streams::Flow),
 }
 pub mod streams {
     #[derive(Clone, Copy)]
@@ -32,5 +33,11 @@ pub mod streams {
         NoneToValue,
         FloatToQuantity,
         QuantityToFloat,
+    }
+    #[derive(Clone, Copy)]
+    pub enum Flow {
+        FreezeStream,
+        IfStream,
+        IfElseStream,
     }
 }

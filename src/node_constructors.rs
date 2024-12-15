@@ -531,6 +531,128 @@ impl Node {
             ),
         )
     }
+    pub fn new_freeze_stream() -> Self {
+        Self::new(
+            "FreezeStream".into(),
+            2,
+            Box::new(
+                |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
+                    match target_version {
+                        TargetVersion::V0_3 => {
+                            format!(
+                                "let {} = panic!(\"FreezeStream available in RRTK 0.4+\");\n",
+                                var_name
+                            )
+                        }
+                        TargetVersion::V0_4 => {
+                            format!(
+                                "let {} = make_input_getter({}::new({}, {}));\n",
+                                var_name,
+                                scope.string_path(path::Crate::Streams(path::Streams::Flow(
+                                    path::streams::Flow::FreezeStream
+                                ))),
+                                input_names[0],
+                                input_names[1]
+                            )
+                        }
+                        TargetVersion::V0_5 | TargetVersion::V0_6 => {
+                            format!(
+                                "let {} = static_reference!({}::new({}, {}));\n",
+                                var_name,
+                                scope.string_path(path::Crate::Streams(path::Streams::Flow(
+                                    path::streams::Flow::FreezeStream
+                                ))),
+                                input_names[0],
+                                input_names[1]
+                            )
+                        }
+                    }
+                },
+            ),
+        )
+    }
+    pub fn new_if_stream() -> Self {
+        Self::new(
+            "IfStream".into(),
+            2,
+            Box::new(
+                |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
+                    match target_version {
+                        TargetVersion::V0_3 => {
+                            format!(
+                                "let {} = panic!(\"IfStream available in RRTK 0.4+\");\n",
+                                var_name
+                            )
+                        }
+                        TargetVersion::V0_4 => {
+                            format!(
+                                "let {} = make_input_getter({}::new({}, {}));\n",
+                                var_name,
+                                scope.string_path(path::Crate::Streams(path::Streams::Flow(
+                                    path::streams::Flow::IfStream
+                                ))),
+                                input_names[0],
+                                input_names[1]
+                            )
+                        }
+                        TargetVersion::V0_5 | TargetVersion::V0_6 => {
+                            format!(
+                                "let {} = static_reference!({}::new({}, {}));\n",
+                                var_name,
+                                scope.string_path(path::Crate::Streams(path::Streams::Flow(
+                                    path::streams::Flow::IfStream
+                                ))),
+                                input_names[0],
+                                input_names[1]
+                            )
+                        }
+                    }
+                },
+            ),
+        )
+    }
+    pub fn new_if_else_stream() -> Self {
+        Self::new(
+            "IfElseStream".into(),
+            3,
+            Box::new(
+                |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
+                    match target_version {
+                        TargetVersion::V0_3 => {
+                            format!(
+                                "let {} = panic!(\"IfElseStream available in RRTK 0.4+\");\n",
+                                var_name
+                            )
+                        }
+                        TargetVersion::V0_4 => {
+                            format!(
+                                "let {} = make_input_getter({}::new({}, {}, {}));\n",
+                                var_name,
+                                scope.string_path(path::Crate::Streams(path::Streams::Flow(
+                                    path::streams::Flow::IfElseStream
+                                ))),
+                                input_names[0],
+                                input_names[1],
+                                input_names[2]
+                            )
+                        }
+                        TargetVersion::V0_5 | TargetVersion::V0_6 => {
+                            format!(
+                                "let {} = static_reference!({}::new({}, {}, {}));\n",
+                                var_name,
+                                scope.string_path(path::Crate::Streams(path::Streams::Flow(
+                                    path::streams::Flow::IfElseStream
+                                ))),
+                                input_names[0],
+                                input_names[1],
+                                input_names[2]
+                            )
+                        }
+                    }
+                },
+            ),
+        )
+    }
     pub fn new_quotient_stream() -> Self {
         Self::new(
             "QuotientStream".into(),

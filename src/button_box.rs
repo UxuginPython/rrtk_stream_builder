@@ -165,6 +165,38 @@ pub fn make_button_box(
     });
     button_box.append(&quantity_to_float_button);
 
+    let flow_label = Label::builder().label("rrtk::streams::flow").build();
+    button_box.append(&flow_label);
+
+    let freeze_stream_button = Button::builder().label("FreezeStream").build();
+    let my_push = push.clone();
+    freeze_stream_button.connect_clicked(move |_| {
+        my_push(
+            Rc::new(RefCell::new(Node::new_freeze_stream())),
+            100.0,
+            100.0,
+        )
+    });
+    button_box.append(&freeze_stream_button);
+
+    let if_stream_button = Button::builder().label("IfStream").build();
+    let my_push = push.clone();
+    if_stream_button.connect_clicked(move |_| {
+        my_push(Rc::new(RefCell::new(Node::new_if_stream())), 100.0, 100.0)
+    });
+    button_box.append(&if_stream_button);
+
+    let if_else_stream_button = Button::builder().label("IfElseStream").build();
+    let my_push = push.clone();
+    if_else_stream_button.connect_clicked(move |_| {
+        my_push(
+            Rc::new(RefCell::new(Node::new_if_else_stream())),
+            100.0,
+            100.0,
+        )
+    });
+    button_box.append(&if_else_stream_button);
+
     let quotient_stream_button = Button::builder().label("QuotientStream").build();
     quotient_stream_button.connect_clicked(move |_| {
         push(

@@ -39,6 +39,7 @@ struct Streams {
     latest: bool,
     control: streams::Control,
     converters: streams::Converters,
+    flow: streams::Flow,
 }
 impl Streams {
     fn new() -> Self {
@@ -48,6 +49,7 @@ impl Streams {
             latest: false,
             control: streams::Control::new(),
             converters: streams::Converters::new(),
+            flow: streams::Flow::new(),
         }
     }
     fn string_path(&self, super_path: String, path: path::Streams) -> String {
@@ -59,6 +61,7 @@ impl Streams {
             path::Streams::Converters(stream_type) => {
                 self.converters.string_path(name, stream_type)
             }
+            path::Streams::Flow(stream_type) => self.flow.string_path(name, stream_type),
         }
     }
 }
@@ -141,6 +144,34 @@ mod streams {
                 }
                 path::streams::Converters::QuantityToFloat => {
                     reduce(name, "QuantityToFloat", self.quantity_to_float)
+                }
+            }
+        }
+    }
+    pub struct Flow {
+        self_in_scope: bool,
+        freeze_stream: bool,
+        if_stream: bool,
+        if_else_stream: bool,
+    }
+    impl Flow {
+        pub fn new() -> Self {
+            Self {
+                self_in_scope: false,
+                freeze_stream: false,
+                if_stream: false,
+                if_else_stream: false,
+            }
+        }
+        pub fn string_path(&self, super_path: String, path: path::streams::Flow) -> String {
+            let name = reduce(super_path, "flow::", self.self_in_scope);
+            match path {
+                path::streams::Flow::FreezeStream => {
+                    reduce(name, "FreezeStream", self.freeze_stream)
+                }
+                path::streams::Flow::IfStream => reduce(name, "IfStream", self.if_stream),
+                path::streams::Flow::IfElseStream => {
+                    reduce(name, "IfElseStream", self.if_else_stream)
                 }
             }
         }
