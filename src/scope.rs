@@ -41,6 +41,7 @@ struct Streams {
     converters: streams::Converters,
     flow: streams::Flow,
     logic: streams::Logic,
+    math: streams::Math,
 }
 impl Streams {
     fn new() -> Self {
@@ -52,6 +53,7 @@ impl Streams {
             converters: streams::Converters::new(),
             flow: streams::Flow::new(),
             logic: streams::Logic::new(),
+            math: streams::Math::new(),
         }
     }
     fn string_path(&self, super_path: String, path: path::Streams) -> String {
@@ -65,6 +67,7 @@ impl Streams {
             }
             path::Streams::Flow(stream_type) => self.flow.string_path(name, stream_type),
             path::Streams::Logic(stream_type) => self.logic.string_path(name, stream_type),
+            path::Streams::Math(stream_type) => self.math.string_path(name, stream_type),
         }
     }
 }
@@ -200,6 +203,60 @@ mod streams {
                 path::streams::Logic::AndStream => reduce(name, "AndStream", self.and_stream),
                 path::streams::Logic::OrStream => reduce(name, "OrStream", self.or_stream),
                 path::streams::Logic::NotStream => reduce(name, "NotStream", self.not_stream),
+            }
+        }
+    }
+    pub struct Math {
+        self_in_scope: bool,
+        sum_stream: bool,
+        sum_2: bool,
+        difference_stream: bool,
+        product_stream: bool,
+        product_2: bool,
+        quotient_stream: bool,
+        exponent_stream: bool,
+        derivative_stream: bool,
+        integral_stream: bool,
+    }
+    impl Math {
+        pub fn new() -> Self {
+            Self {
+                self_in_scope: false,
+                sum_stream: false,
+                sum_2: false,
+                difference_stream: false,
+                product_stream: false,
+                product_2: false,
+                quotient_stream: false,
+                exponent_stream: false,
+                derivative_stream: false,
+                integral_stream: false,
+            }
+        }
+        pub fn string_path(&self, super_path: String, path: path::streams::Math) -> String {
+            let name = reduce(super_path, "math::", self.self_in_scope);
+            match path {
+                path::streams::Math::SumStream => reduce(name, "SumStream", self.sum_stream),
+                path::streams::Math::Sum2 => reduce(name, "Sum2", self.sum_2),
+                path::streams::Math::DifferenceStream => {
+                    reduce(name, "DifferenceStream", self.difference_stream)
+                }
+                path::streams::Math::ProductStream => {
+                    reduce(name, "ProductStream", self.product_stream)
+                }
+                path::streams::Math::Product2 => reduce(name, "Product2", self.product_2),
+                path::streams::Math::QuotientStream => {
+                    reduce(name, "QuotientStream", self.quotient_stream)
+                }
+                path::streams::Math::ExponentStream => {
+                    reduce(name, "ExponentStream", self.exponent_stream)
+                }
+                path::streams::Math::DerivativeStream => {
+                    reduce(name, "DerivativeStream", self.derivative_stream)
+                }
+                path::streams::Math::IntegralStream => {
+                    reduce(name, "IntegralStream", self.integral_stream)
+                }
             }
         }
     }

@@ -16,6 +16,7 @@ pub enum Streams {
     Converters(streams::Converters),
     Flow(streams::Flow),
     Logic(streams::Logic),
+    Math(streams::Math),
 }
 pub mod streams {
     #[derive(Clone, Copy)]
@@ -46,5 +47,17 @@ pub mod streams {
         AndStream,
         OrStream,
         NotStream,
+    }
+    #[derive(Clone, Copy)]
+    pub enum Math {
+        SumStream,
+        Sum2,
+        DifferenceStream,
+        ProductStream,
+        Product2,
+        QuotientStream,
+        ExponentStream,
+        DerivativeStream,
+        IntegralStream,
     }
 }
