@@ -80,7 +80,7 @@ impl Node {
                         }
                         TargetVersion::V0_4 => {
                             format!(
-                                "let {} = make_input_getter({}::new({}, todo!(), todo!()));\n",
+                                "let {} = make_input_getter({}::new(Rc::clone(&{}), todo!(), todo!()));\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Expirer)),
                                 input_names[0]
@@ -88,7 +88,7 @@ impl Node {
                         }
                         TargetVersion::V0_5 | TargetVersion::V0_6 => {
                             format!(
-                                "let {} = static_reference!({}::new({}, todo!(), todo!()));\n",
+                                "let {} = static_reference!({}::new({}.clone(), todo!(), todo!()));\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Expirer)),
                                 input_names[0]
@@ -108,7 +108,7 @@ impl Node {
                     match target_version {
                         TargetVersion::V0_3 => {
                             format!(
-                                "let {} = make_input_getter!({}::new([{}, {}]), T, E);\n",
+                                "let {} = make_input_getter!({}::new([Rc::clone(&{}), Rc::clone(&{})]), T, E);\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Latest)),
                                 input_names[0],
@@ -117,7 +117,7 @@ impl Node {
                         }
                         TargetVersion::V0_4 => {
                             format!(
-                                "let {} = make_input_getter({}::new([{}, {}]));\n",
+                                "let {} = make_input_getter({}::new([Rc::clone(&{}), Rc::clone(&{})]));\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Latest)),
                                 input_names[0],
@@ -126,7 +126,7 @@ impl Node {
                         }
                         TargetVersion::V0_5 | TargetVersion::V0_6 => {
                             format!(
-                                "let {} = static_reference!({}::new([{}, {}]));\n",
+                                "let {} = static_reference!({}::new([{}.clone(), {}.clone()]));\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Latest)),
                                 input_names[0],
@@ -150,7 +150,7 @@ impl Node {
                         }
                         TargetVersion::V0_4 => {
                             format!(
-                                "let {} = make_input_getter({}::new({}, todo!(), todo!()));\n",
+                                "let {} = make_input_getter({}::new(Rc::clone(&{}), todo!(), todo!()));\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Control(
                                     path::streams::Control::CommandPID
@@ -160,7 +160,7 @@ impl Node {
                         }
                         TargetVersion::V0_5 | TargetVersion::V0_6 => {
                             format!(
-                                "let {} = static_reference!({}::new({}, todo!(), todo!()));\n",
+                                "let {} = static_reference!({}::new({}.clone(), todo!(), todo!()));\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Control(
                                     path::streams::Control::CommandPID
@@ -182,7 +182,7 @@ impl Node {
                     match target_version {
                         TargetVersion::V0_3 => {
                             format!(
-                                "let {} = make_input_getter!({}::new({}, todo!()), f32, E);\n",
+                                "let {} = make_input_getter!({}::new(Rc::clone(&{}), todo!()), f32, E);\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Control(
                                     path::streams::Control::EWMAStream
@@ -192,7 +192,7 @@ impl Node {
                         }
                         TargetVersion::V0_4 => {
                             format!(
-                                "let {} = make_input_getter({}::new({}, todo!()));\n",
+                                "let {} = make_input_getter({}::new(Rc::clone(&{}), todo!()));\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Control(
                                     path::streams::Control::EWMAStream
@@ -202,7 +202,7 @@ impl Node {
                         }
                         TargetVersion::V0_5 | TargetVersion::V0_6 => {
                             format!(
-                                "let {} = static_reference!({}::new({}, todo!()));\n",
+                                "let {} = static_reference!({}::new({}.clone(), todo!()));\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Control(
                                     path::streams::Control::EWMAStream
@@ -224,7 +224,7 @@ impl Node {
                     match target_version {
                         TargetVersion::V0_3 => {
                             format!(
-                                "let {} = make_input_getter!({}::new({}, todo!()), f32, E);\n",
+                                "let {} = make_input_getter!({}::new(Rc::clone(&{}), todo!()), f32, E);\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Control(
                                     path::streams::Control::EWMAStream
@@ -234,7 +234,7 @@ impl Node {
                         }
                         TargetVersion::V0_4 => {
                             format!(
-                                "let {} = make_input_getter({}::new({}, todo!()));\n",
+                                "let {} = make_input_getter({}::new(Rc::clone(&{}), todo!()));\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Control(
                                     path::streams::Control::EWMAStream
@@ -244,7 +244,7 @@ impl Node {
                         }
                         TargetVersion::V0_5 | TargetVersion::V0_6 => {
                             format!(
-                                "let {} = static_reference!({}::new({}, todo!()));\n",
+                                "let {} = static_reference!({}::new({}.clone(), todo!()));\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Control(
                                     path::streams::Control::EWMAStream
@@ -266,7 +266,7 @@ impl Node {
                     match target_version {
                         TargetVersion::V0_3 => {
                             format!(
-                                "let {} = make_input_getter!({}::new({}, todo!(), todo!()), f32, E);\n",
+                                "let {} = make_input_getter!({}::new(Rc::clone(&{}), todo!(), todo!()), f32, E);\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Control(
                                     path::streams::Control::PIDControllerStream
@@ -276,7 +276,7 @@ impl Node {
                         }
                         TargetVersion::V0_4 => {
                             format!(
-                                "let {} = make_input_getter({}::new({}, todo!(), todo!()));\n",
+                                "let {} = make_input_getter({}::new(Rc::clone(&{}), todo!(), todo!()));\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Control(
                                     path::streams::Control::PIDControllerStream
@@ -286,7 +286,7 @@ impl Node {
                         }
                         TargetVersion::V0_5 | TargetVersion::V0_6 => {
                             format!(
-                                "let {} = static_reference!({}::new({}, todo!(), todo!()));\n",
+                                "let {} = static_reference!({}::new({}.clone(), todo!(), todo!()));\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Control(
                                     path::streams::Control::PIDControllerStream
@@ -307,7 +307,7 @@ impl Node {
                 |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
                     match target_version {
                         TargetVersion::V0_3 => format!(
-                            "let {} = make_input_getter!({}::new({}), f32, E);\n",
+                            "let {} = make_input_getter!({}::new(Rc::clone(&{})), f32, E);\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Converters(
                                 path::streams::Converters::PositionToState
@@ -315,7 +315,7 @@ impl Node {
                             input_names[0],
                         ),
                         TargetVersion::V0_4 => format!(
-                            "let {} = make_input_getter({}::new({}));\n",
+                            "let {} = make_input_getter({}::new(Rc::clone(&{})));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Converters(
                                 path::streams::Converters::PositionToState
@@ -323,7 +323,7 @@ impl Node {
                             input_names[0],
                         ),
                         TargetVersion::V0_5 | TargetVersion::V0_6 => format!(
-                            "let {} = static_reference!({}::new({}));\n",
+                            "let {} = static_reference!({}::new({}.clone()));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Converters(
                                 path::streams::Converters::PositionToState
@@ -343,7 +343,7 @@ impl Node {
                 |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
                     match target_version {
                         TargetVersion::V0_3 => format!(
-                            "let {} = make_input_getter!({}::new({}), f32, E);\n",
+                            "let {} = make_input_getter!({}::new(Rc::clone(&{})), f32, E);\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Converters(
                                 path::streams::Converters::VelocityToState
@@ -351,7 +351,7 @@ impl Node {
                             input_names[0],
                         ),
                         TargetVersion::V0_4 => format!(
-                            "let {} = make_input_getter({}::new({}));\n",
+                            "let {} = make_input_getter({}::new(Rc::clone(&{})));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Converters(
                                 path::streams::Converters::VelocityToState
@@ -359,7 +359,7 @@ impl Node {
                             input_names[0],
                         ),
                         TargetVersion::V0_5 | TargetVersion::V0_6 => format!(
-                            "let {} = static_reference!({}::new({}));\n",
+                            "let {} = static_reference!({}::new({}.clone()));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Converters(
                                 path::streams::Converters::VelocityToState
@@ -379,7 +379,7 @@ impl Node {
                 |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
                     match target_version {
                         TargetVersion::V0_3 => format!(
-                            "let {} = make_input_getter!({}::new({}), f32, E);\n",
+                            "let {} = make_input_getter!({}::new(Rc::clone(&{})), f32, E);\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Converters(
                                 path::streams::Converters::AccelerationToState
@@ -387,7 +387,7 @@ impl Node {
                             input_names[0],
                         ),
                         TargetVersion::V0_4 => format!(
-                            "let {} = make_input_getter({}::new({}));\n",
+                            "let {} = make_input_getter({}::new(Rc::clone(&{})));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Converters(
                                 path::streams::Converters::AccelerationToState
@@ -395,7 +395,7 @@ impl Node {
                             input_names[0],
                         ),
                         TargetVersion::V0_5 | TargetVersion::V0_6 => format!(
-                            "let {} = static_reference!({}::new({}));\n",
+                            "let {} = static_reference!({}::new({}.clone()));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Converters(
                                 path::streams::Converters::AccelerationToState
@@ -415,7 +415,7 @@ impl Node {
                 |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
                     match target_version {
                         TargetVersion::V0_3 => format!(
-                            "let {} = make_input_getter!({}::new({}), T, E);\n",
+                            "let {} = make_input_getter!({}::new(Rc::clone(&{})), T, E);\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Converters(
                                 path::streams::Converters::NoneToError
@@ -423,7 +423,7 @@ impl Node {
                             input_names[0],
                         ),
                         TargetVersion::V0_4 => format!(
-                            "let {} = make_input_getter({}::new({}));\n",
+                            "let {} = make_input_getter({}::new(Rc::clone(&{})));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Converters(
                                 path::streams::Converters::NoneToError
@@ -431,7 +431,7 @@ impl Node {
                             input_names[0],
                         ),
                         TargetVersion::V0_5 | TargetVersion::V0_6 => format!(
-                            "let {} = static_reference!({}::new({}));\n",
+                            "let {} = static_reference!({}::new({}.clone()));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Converters(
                                 path::streams::Converters::NoneToError
@@ -451,7 +451,7 @@ impl Node {
                 |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
                     match target_version {
                         TargetVersion::V0_3 => format!(
-                            "let {} = make_input_getter!({}::new({}, todo!(), todo!()), T, E);\n",
+                            "let {} = make_input_getter!({}::new(Rc::clone(&{}), todo!(), todo!()), T, E);\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Converters(
                                 path::streams::Converters::NoneToValue
@@ -459,7 +459,7 @@ impl Node {
                             input_names[0],
                         ),
                         TargetVersion::V0_4 => format!(
-                            "let {} = make_input_getter({}::new({}, todo!(), todo!()));\n",
+                            "let {} = make_input_getter({}::new(Rc::clone(&{}), todo!(), todo!()));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Converters(
                                 path::streams::Converters::NoneToValue
@@ -467,7 +467,7 @@ impl Node {
                             input_names[0],
                         ),
                         TargetVersion::V0_5 | TargetVersion::V0_6 => format!(
-                            "let {} = static_reference!({}::new({}, todo!(), todo!()));\n",
+                            "let {} = static_reference!({}::new({}.clone(), todo!(), todo!()));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Converters(
                                 path::streams::Converters::NoneToValue
@@ -493,7 +493,7 @@ impl Node {
                             )
                         }
                         TargetVersion::V0_6 => format!(
-                            "let {} = static_reference!({}::new(todo!(), {}));\n",
+                            "let {} = static_reference!({}::new(todo!(), {}.clone()));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Converters(
                                 path::streams::Converters::FloatToQuantity
@@ -519,7 +519,7 @@ impl Node {
                             )
                         }
                         TargetVersion::V0_6 => format!(
-                            "let {} = static_reference!({}::new({}));\n",
+                            "let {} = static_reference!({}::new({}.clone()));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Converters(
                                 path::streams::Converters::QuantityToFloat
@@ -546,7 +546,7 @@ impl Node {
                         }
                         TargetVersion::V0_4 => {
                             format!(
-                                "let {} = make_input_getter({}::new({}, {}));\n",
+                                "let {} = make_input_getter({}::new(Rc::clone(&{}), Rc::clone(&{})));\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Flow(
                                     path::streams::Flow::FreezeStream
@@ -557,7 +557,7 @@ impl Node {
                         }
                         TargetVersion::V0_5 | TargetVersion::V0_6 => {
                             format!(
-                                "let {} = static_reference!({}::new({}, {}));\n",
+                                "let {} = static_reference!({}::new({}.clone(), {}.clone()));\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Flow(
                                     path::streams::Flow::FreezeStream
@@ -586,7 +586,7 @@ impl Node {
                         }
                         TargetVersion::V0_4 => {
                             format!(
-                                "let {} = make_input_getter({}::new({}, {}));\n",
+                                "let {} = make_input_getter({}::new(Rc::clone(&{}), Rc::clone(&{})));\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Flow(
                                     path::streams::Flow::IfStream
@@ -597,7 +597,7 @@ impl Node {
                         }
                         TargetVersion::V0_5 | TargetVersion::V0_6 => {
                             format!(
-                                "let {} = static_reference!({}::new({}, {}));\n",
+                                "let {} = static_reference!({}::new({}.clone(), {}.clone()));\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Flow(
                                     path::streams::Flow::IfStream
@@ -626,7 +626,7 @@ impl Node {
                         }
                         TargetVersion::V0_4 => {
                             format!(
-                                "let {} = make_input_getter({}::new({}, {}, {}));\n",
+                                "let {} = make_input_getter({}::new(Rc::clone(&{}), Rc::clone(&{}), Rc::clone(&{})));\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Flow(
                                     path::streams::Flow::IfElseStream
@@ -638,7 +638,7 @@ impl Node {
                         }
                         TargetVersion::V0_5 | TargetVersion::V0_6 => {
                             format!(
-                                "let {} = static_reference!({}::new({}, {}, {}));\n",
+                                "let {} = static_reference!({}::new({}.clone(), {}.clone(), {}.clone()));\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Flow(
                                     path::streams::Flow::IfElseStream
@@ -668,7 +668,7 @@ impl Node {
                         }
                         TargetVersion::V0_4 => {
                             format!(
-                                "let {} = make_input_getter({}::new({}, {}));\n",
+                                "let {} = make_input_getter({}::new(Rc::clone(&{}), Rc::clone(&{})));\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Logic(
                                     path::streams::Logic::AndStream
@@ -679,7 +679,7 @@ impl Node {
                         }
                         TargetVersion::V0_5 | TargetVersion::V0_6 => {
                             format!(
-                                "let {} = static_reference!({}::new({}, {}));\n",
+                                "let {} = static_reference!({}::new({}.clone(), {}.clone()));\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Logic(
                                     path::streams::Logic::AndStream
@@ -708,7 +708,7 @@ impl Node {
                         }
                         TargetVersion::V0_4 => {
                             format!(
-                                "let {} = make_input_getter({}::new({}, {}));\n",
+                                "let {} = make_input_getter({}::new(Rc::clone(&{}), Rc::clone(&{})));\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Logic(
                                     path::streams::Logic::OrStream
@@ -719,7 +719,7 @@ impl Node {
                         }
                         TargetVersion::V0_5 | TargetVersion::V0_6 => {
                             format!(
-                                "let {} = static_reference!({}::new({}, {}));\n",
+                                "let {} = static_reference!({}::new({}.clone(), {}.clone()));\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Logic(
                                     path::streams::Logic::OrStream
@@ -748,7 +748,7 @@ impl Node {
                         }
                         TargetVersion::V0_4 => {
                             format!(
-                                "let {} = make_input_getter({}::new({}));\n",
+                                "let {} = make_input_getter({}::new(Rc::clone(&{})));\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Logic(
                                     path::streams::Logic::NotStream
@@ -758,7 +758,7 @@ impl Node {
                         }
                         TargetVersion::V0_5 | TargetVersion::V0_6 => {
                             format!(
-                                "let {} = static_reference!({}::new({}));\n",
+                                "let {} = static_reference!({}::new({}.clone()));\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Logic(
                                     path::streams::Logic::NotStream
@@ -779,7 +779,7 @@ impl Node {
                 |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
                     match target_version {
                         TargetVersion::V0_3 => format!(
-                            "let {} = make_input_getter!({}::new([{}, {}]), f32, E);\n",
+                            "let {} = make_input_getter!({}::new([Rc::clone(&{}), Rc::clone(&{})]), f32, E);\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Math(
                                 path::streams::Math::SumStream
@@ -788,7 +788,7 @@ impl Node {
                             input_names[1],
                         ),
                         TargetVersion::V0_4 => format!(
-                            "let {} = make_input_getter({}::new([{}, {}]));\n",
+                            "let {} = make_input_getter({}::new([Rc::clone(&{}), Rc::clone(&{})]));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Math(
                                 path::streams::Math::SumStream
@@ -797,7 +797,7 @@ impl Node {
                             input_names[1],
                         ),
                         TargetVersion::V0_5 | TargetVersion::V0_6 => format!(
-                            "let {} = static_reference!({}::new([{}, {}]));\n",
+                            "let {} = static_reference!({}::new([{}.clone(), {}.clone()]));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Math(
                                 path::streams::Math::SumStream
@@ -821,7 +821,7 @@ impl Node {
                             format!("let {} = panic!(\"Sum2 available in RRTK 0.6+\")", var_name,)
                         }
                         TargetVersion::V0_6 => format!(
-                            "let {} = static_reference!({}::new({}, {}));\n",
+                            "let {} = static_reference!({}::new({}.clone(), {}.clone()));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Math(
                                 path::streams::Math::Sum2
@@ -842,7 +842,7 @@ impl Node {
                 |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
                     match target_version {
                         TargetVersion::V0_3 => format!(
-                            "let {} = make_input_getter!({}::new({}, {}), f32, E);\n",
+                            "let {} = make_input_getter!({}::new(Rc::clone(&{}), Rc::clone(&{})), f32, E);\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Math(
                                 path::streams::Math::DifferenceStream
@@ -851,7 +851,7 @@ impl Node {
                             input_names[1],
                         ),
                         TargetVersion::V0_4 => format!(
-                            "let {} = make_input_getter({}::new({}, {}));\n",
+                            "let {} = make_input_getter({}::new(Rc::clone(&{}), Rc::clone(&{})));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Math(
                                 path::streams::Math::DifferenceStream
@@ -860,7 +860,7 @@ impl Node {
                             input_names[1],
                         ),
                         TargetVersion::V0_5 | TargetVersion::V0_6 => format!(
-                            "let {} = static_reference!({}::new({}, {}));\n",
+                            "let {} = static_reference!({}::new({}.clone(), {}.clone()));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Math(
                                 path::streams::Math::DifferenceStream
@@ -881,7 +881,7 @@ impl Node {
                 |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
                     match target_version {
                         TargetVersion::V0_3 => format!(
-                            "let {} = make_input_getter!({}::new([{}, {}]), f32, E);\n",
+                            "let {} = make_input_getter!({}::new([Rc::clone(&{}), Rc::clone(&{})]), f32, E);\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Math(
                                 path::streams::Math::ProductStream
@@ -890,7 +890,7 @@ impl Node {
                             input_names[1],
                         ),
                         TargetVersion::V0_4 => format!(
-                            "let {} = make_input_getter({}::new([{}, {}]));\n",
+                            "let {} = make_input_getter({}::new([Rc::clone(&{}), Rc::clone(&{})]));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Math(
                                 path::streams::Math::ProductStream
@@ -899,7 +899,7 @@ impl Node {
                             input_names[1],
                         ),
                         TargetVersion::V0_5 | TargetVersion::V0_6 => format!(
-                            "let {} = static_reference!({}::new([{}, {}]));\n",
+                            "let {} = static_reference!({}::new([{}.clone(), {}.clone()]));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Math(
                                 path::streams::Math::ProductStream
@@ -926,7 +926,7 @@ impl Node {
                             )
                         }
                         TargetVersion::V0_6 => format!(
-                            "let {} = static_reference!({}::new({}, {}));\n",
+                            "let {} = static_reference!({}::new({}.clone(), {}.clone()));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Math(
                                 path::streams::Math::Product2
@@ -947,7 +947,7 @@ impl Node {
                 |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
                     match target_version {
                         TargetVersion::V0_3 => format!(
-                            "let {} = make_input_getter!({}::new({}, {}), f32, E);\n",
+                            "let {} = make_input_getter!({}::new(Rc::clone(&{}), Rc::clone(&{})), f32, E);\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Math(
                                 path::streams::Math::QuotientStream
@@ -956,7 +956,7 @@ impl Node {
                             input_names[1],
                         ),
                         TargetVersion::V0_4 => format!(
-                            "let {} = make_input_getter({}::new({}, {}));\n",
+                            "let {} = make_input_getter({}::new(Rc::clone(&{}), Rc::clone(&{})));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Math(
                                 path::streams::Math::QuotientStream
@@ -965,7 +965,7 @@ impl Node {
                             input_names[1],
                         ),
                         TargetVersion::V0_5 | TargetVersion::V0_6 => format!(
-                            "let {} = static_reference!({}::new({}, {}));\n",
+                            "let {} = static_reference!({}::new({}.clone(), {}.clone()));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Math(
                                 path::streams::Math::QuotientStream
@@ -986,7 +986,7 @@ impl Node {
                 |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
                     match target_version {
                         TargetVersion::V0_3 => format!(
-                            "let {} = make_input_getter!({}::new({}, {}), f32, E);\n",
+                            "let {} = make_input_getter!({}::new(Rc::clone(&{}), Rc::clone(&{})), f32, E);\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Math(
                                 path::streams::Math::ExponentStream
@@ -995,7 +995,7 @@ impl Node {
                             input_names[1],
                         ),
                         TargetVersion::V0_4 => format!(
-                            "let {} = make_input_getter({}::new({}, {}));\n",
+                            "let {} = make_input_getter({}::new(Rc::clone(&{}), Rc::clone(&{})));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Math(
                                 path::streams::Math::ExponentStream
@@ -1004,7 +1004,7 @@ impl Node {
                             input_names[1],
                         ),
                         TargetVersion::V0_5 | TargetVersion::V0_6 => format!(
-                            "let {} = static_reference!({}::new({}, {}));\n",
+                            "let {} = static_reference!({}::new({}.clone(), {}.clone()));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Math(
                                 path::streams::Math::ExponentStream
@@ -1025,7 +1025,7 @@ impl Node {
                 |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
                     match target_version {
                         TargetVersion::V0_3 => format!(
-                            "let {} = make_input_getter!({}::new({}), f32, E);\n",
+                            "let {} = make_input_getter!({}::new(Rc::clone(&{})), f32, E);\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Math(
                                 path::streams::Math::DerivativeStream
@@ -1033,7 +1033,7 @@ impl Node {
                             input_names[0],
                         ),
                         TargetVersion::V0_4 => format!(
-                            "let {} = make_input_getter({}::new({}));\n",
+                            "let {} = make_input_getter({}::new(Rc::clone(&{})));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Math(
                                 path::streams::Math::DerivativeStream
@@ -1041,7 +1041,7 @@ impl Node {
                             input_names[0],
                         ),
                         TargetVersion::V0_5 | TargetVersion::V0_6 => format!(
-                            "let {} = static_reference!({}::new({}));\n",
+                            "let {} = static_reference!({}::new({}.clone()));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Math(
                                 path::streams::Math::DerivativeStream
@@ -1061,7 +1061,7 @@ impl Node {
                 |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
                     match target_version {
                         TargetVersion::V0_3 => format!(
-                            "let {} = make_input_getter!({}::new({}), f32, E);\n",
+                            "let {} = make_input_getter!({}::new(Rc::clone(&{})), f32, E);\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Math(
                                 path::streams::Math::IntegralStream
@@ -1069,7 +1069,7 @@ impl Node {
                             input_names[0],
                         ),
                         TargetVersion::V0_4 => format!(
-                            "let {} = make_input_getter({}::new({}));\n",
+                            "let {} = make_input_getter({}::new(Rc::clone(&{})));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Math(
                                 path::streams::Math::IntegralStream
@@ -1077,7 +1077,7 @@ impl Node {
                             input_names[0],
                         ),
                         TargetVersion::V0_5 | TargetVersion::V0_6 => format!(
-                            "let {} = static_reference!({}::new({}));\n",
+                            "let {} = static_reference!({}::new({}.clone()));\n",
                             var_name,
                             scope.string_path(path::Crate::Streams(path::Streams::Math(
                                 path::streams::Math::IntegralStream
