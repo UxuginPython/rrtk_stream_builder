@@ -391,6 +391,7 @@ fn build_ui(app: &Application) {
     let window = ApplicationWindow::builder()
         .application(app)
         .child(&content)
+        .title("RRTK Stream Builder")
         .build();
     window.present();
 }
