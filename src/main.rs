@@ -271,7 +271,7 @@ fn build_ui(app: &Application) {
     let drag_info: Rc<RefCell<Option<DragInfo>>> = Rc::new(RefCell::new(None));
     let drag_gesture_nodes = Rc::new(RefCell::new(Vec::<Rc<RefCell<Node>>>::new()));
     let target_version = Rc::new(Cell::new(TargetVersion::V0_6));
-    let scope = Rc::new(RefCell::new(scope::Crate::new()));
+    let scope = Rc::new(RefCell::new(scope::Crate::default()));
     let text_buffer = TextBuffer::new(None);
     let text_view = TextView::builder()
         .buffer(&text_buffer)

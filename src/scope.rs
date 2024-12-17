@@ -9,19 +9,13 @@ fn reduce(super_path: String, name: &str, in_scope: bool) -> String {
         super_path + name
     }
 }
+#[derive(Default)]
 pub struct Crate {
     constant_getter: bool,
     none_getter: bool,
     streams: Streams,
 }
 impl Crate {
-    pub fn new() -> Self {
-        Self {
-            constant_getter: false,
-            none_getter: false,
-            streams: Streams::new(),
-        }
-    }
     pub fn string_path(&self, path: path::Crate) -> String {
         let crate_path: String = "rrtk::".into();
         match path {
@@ -33,6 +27,7 @@ impl Crate {
         }
     }
 }
+#[derive(Default)]
 struct Streams {
     self_in_scope: bool,
     expirer: bool,
@@ -44,18 +39,6 @@ struct Streams {
     math: streams::Math,
 }
 impl Streams {
-    fn new() -> Self {
-        Self {
-            self_in_scope: false,
-            expirer: false,
-            latest: false,
-            control: streams::Control::new(),
-            converters: streams::Converters::new(),
-            flow: streams::Flow::new(),
-            logic: streams::Logic::new(),
-            math: streams::Math::new(),
-        }
-    }
     fn string_path(&self, super_path: String, path: path::Streams) -> String {
         let name = reduce(super_path, "streams::", self.self_in_scope);
         match path {
@@ -73,6 +56,7 @@ impl Streams {
 }
 mod streams {
     use super::*;
+    #[derive(Default)]
     pub struct Control {
         self_in_scope: bool,
         command_pid: bool,
@@ -81,15 +65,6 @@ mod streams {
         pid_controller_stream: bool,
     }
     impl Control {
-        pub fn new() -> Self {
-            Self {
-                self_in_scope: false,
-                command_pid: false,
-                ewma_stream: false,
-                moving_average_stream: false,
-                pid_controller_stream: false,
-            }
-        }
         pub fn string_path(&self, super_path: String, path: path::streams::Control) -> String {
             let name = reduce(super_path, "control::", self.self_in_scope);
             match path {
@@ -104,6 +79,7 @@ mod streams {
             }
         }
     }
+    #[derive(Default)]
     pub struct Converters {
         self_in_scope: bool,
         position_to_state: bool,
@@ -115,18 +91,6 @@ mod streams {
         quantity_to_float: bool,
     }
     impl Converters {
-        pub fn new() -> Self {
-            Self {
-                self_in_scope: false,
-                position_to_state: false,
-                velocity_to_state: false,
-                acceleration_to_state: false,
-                none_to_error: false,
-                none_to_value: false,
-                float_to_quantity: false,
-                quantity_to_float: false,
-            }
-        }
         pub fn string_path(&self, super_path: String, path: path::streams::Converters) -> String {
             let name = reduce(super_path, "converters::", self.self_in_scope);
             match path {
@@ -154,6 +118,7 @@ mod streams {
             }
         }
     }
+    #[derive(Default)]
     pub struct Flow {
         self_in_scope: bool,
         freeze_stream: bool,
@@ -161,14 +126,6 @@ mod streams {
         if_else_stream: bool,
     }
     impl Flow {
-        pub fn new() -> Self {
-            Self {
-                self_in_scope: false,
-                freeze_stream: false,
-                if_stream: false,
-                if_else_stream: false,
-            }
-        }
         pub fn string_path(&self, super_path: String, path: path::streams::Flow) -> String {
             let name = reduce(super_path, "flow::", self.self_in_scope);
             match path {
@@ -182,6 +139,7 @@ mod streams {
             }
         }
     }
+    #[derive(Default)]
     pub struct Logic {
         self_in_scope: bool,
         and_stream: bool,
@@ -189,14 +147,6 @@ mod streams {
         not_stream: bool,
     }
     impl Logic {
-        pub fn new() -> Self {
-            Self {
-                self_in_scope: false,
-                and_stream: false,
-                or_stream: false,
-                not_stream: false,
-            }
-        }
         pub fn string_path(&self, super_path: String, path: path::streams::Logic) -> String {
             let name = reduce(super_path, "logic::", self.self_in_scope);
             match path {
@@ -206,6 +156,7 @@ mod streams {
             }
         }
     }
+    #[derive(Default)]
     pub struct Math {
         self_in_scope: bool,
         sum_stream: bool,
@@ -219,20 +170,6 @@ mod streams {
         integral_stream: bool,
     }
     impl Math {
-        pub fn new() -> Self {
-            Self {
-                self_in_scope: false,
-                sum_stream: false,
-                sum_2: false,
-                difference_stream: false,
-                product_stream: false,
-                product_2: false,
-                quotient_stream: false,
-                exponent_stream: false,
-                derivative_stream: false,
-                integral_stream: false,
-            }
-        }
         pub fn string_path(&self, super_path: String, path: path::streams::Math) -> String {
             let name = reduce(super_path, "math::", self.self_in_scope);
             match path {
