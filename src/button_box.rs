@@ -53,6 +53,16 @@ pub fn make_button_box(
     button!(new_and_stream, "AndStream");
     button!(new_or_stream, "OrStream");
     button!(new_not_stream, "NotStream");
-    button!(new_quotient_stream, "QuotientStream"); //One of these things is not like the others
+    let math_label = Label::builder().label("rrtk::streams::math").build();
+    button_box.append(&math_label);
+    button!(new_sum_stream, "SumStream");
+    button!(new_sum_2, "Sum2");
+    button!(new_difference_stream, "DifferenceStream");
+    button!(new_product_stream, "ProductStream");
+    button!(new_product_2, "Product2");
+    button!(new_quotient_stream, "QuotientStream");
+    button!(new_exponent_stream, "ExponentStream");
+    button!(new_derivative_stream, "DerivativeStream");
+    button!(new_integral_stream, "IntegralStream");
     button_box
 }

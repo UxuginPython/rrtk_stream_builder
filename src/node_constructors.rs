@@ -771,6 +771,174 @@ impl Node {
             ),
         )
     }
+    pub fn new_sum_stream() -> Self {
+        Self::new(
+            "SumStream".into(),
+            2,
+            Box::new(
+                |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
+                    match target_version {
+                        TargetVersion::V0_3 => format!(
+                            "let {} = make_input_getter!({}::new([{}, {}]), f32, E);\n",
+                            var_name,
+                            scope.string_path(path::Crate::Streams(path::Streams::Math(
+                                path::streams::Math::SumStream
+                            ))),
+                            input_names[0],
+                            input_names[1],
+                        ),
+                        TargetVersion::V0_4 => format!(
+                            "let {} = make_input_getter({}::new([{}, {}]));\n",
+                            var_name,
+                            scope.string_path(path::Crate::Streams(path::Streams::Math(
+                                path::streams::Math::SumStream
+                            ))),
+                            input_names[0],
+                            input_names[1],
+                        ),
+                        TargetVersion::V0_5 | TargetVersion::V0_6 => format!(
+                            "let {} = static_reference!({}::new([{}, {}]));\n",
+                            var_name,
+                            scope.string_path(path::Crate::Streams(path::Streams::Math(
+                                path::streams::Math::SumStream
+                            ))),
+                            input_names[0],
+                            input_names[1],
+                        ),
+                    }
+                },
+            ),
+        )
+    }
+    pub fn new_sum_2() -> Self {
+        Self::new(
+            "Sum2".into(),
+            2,
+            Box::new(
+                |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
+                    match target_version {
+                        TargetVersion::V0_3 | TargetVersion::V0_4 | TargetVersion::V0_5 => {
+                            format!("let {} = panic!(\"Sum2 available in RRTK 0.6+\")", var_name,)
+                        }
+                        TargetVersion::V0_6 => format!(
+                            "let {} = static_reference!({}::new({}, {}));\n",
+                            var_name,
+                            scope.string_path(path::Crate::Streams(path::Streams::Math(
+                                path::streams::Math::Sum2
+                            ))),
+                            input_names[0],
+                            input_names[1],
+                        ),
+                    }
+                },
+            ),
+        )
+    }
+    pub fn new_difference_stream() -> Self {
+        Self::new(
+            "DifferenceStream".into(),
+            2,
+            Box::new(
+                |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
+                    match target_version {
+                        TargetVersion::V0_3 => format!(
+                            "let {} = make_input_getter!({}::new({}, {}), f32, E);\n",
+                            var_name,
+                            scope.string_path(path::Crate::Streams(path::Streams::Math(
+                                path::streams::Math::DifferenceStream
+                            ))),
+                            input_names[0],
+                            input_names[1],
+                        ),
+                        TargetVersion::V0_4 => format!(
+                            "let {} = make_input_getter({}::new({}, {}));\n",
+                            var_name,
+                            scope.string_path(path::Crate::Streams(path::Streams::Math(
+                                path::streams::Math::DifferenceStream
+                            ))),
+                            input_names[0],
+                            input_names[1],
+                        ),
+                        TargetVersion::V0_5 | TargetVersion::V0_6 => format!(
+                            "let {} = static_reference!({}::new({}, {}));\n",
+                            var_name,
+                            scope.string_path(path::Crate::Streams(path::Streams::Math(
+                                path::streams::Math::DifferenceStream
+                            ))),
+                            input_names[0],
+                            input_names[1],
+                        ),
+                    }
+                },
+            ),
+        )
+    }
+    pub fn new_product_stream() -> Self {
+        Self::new(
+            "ProductStream".into(),
+            2,
+            Box::new(
+                |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
+                    match target_version {
+                        TargetVersion::V0_3 => format!(
+                            "let {} = make_input_getter!({}::new([{}, {}]), f32, E);\n",
+                            var_name,
+                            scope.string_path(path::Crate::Streams(path::Streams::Math(
+                                path::streams::Math::ProductStream
+                            ))),
+                            input_names[0],
+                            input_names[1],
+                        ),
+                        TargetVersion::V0_4 => format!(
+                            "let {} = make_input_getter({}::new([{}, {}]));\n",
+                            var_name,
+                            scope.string_path(path::Crate::Streams(path::Streams::Math(
+                                path::streams::Math::ProductStream
+                            ))),
+                            input_names[0],
+                            input_names[1],
+                        ),
+                        TargetVersion::V0_5 | TargetVersion::V0_6 => format!(
+                            "let {} = static_reference!({}::new([{}, {}]));\n",
+                            var_name,
+                            scope.string_path(path::Crate::Streams(path::Streams::Math(
+                                path::streams::Math::ProductStream
+                            ))),
+                            input_names[0],
+                            input_names[1],
+                        ),
+                    }
+                },
+            ),
+        )
+    }
+    pub fn new_product_2() -> Self {
+        Self::new(
+            "Product2".into(),
+            2,
+            Box::new(
+                |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
+                    match target_version {
+                        TargetVersion::V0_3 | TargetVersion::V0_4 | TargetVersion::V0_5 => {
+                            format!(
+                                "let {} = panic!(\"Product2 available in RRTK 0.6+\")",
+                                var_name,
+                            )
+                        }
+                        TargetVersion::V0_6 => format!(
+                            "let {} = static_reference!({}::new({}, {}));\n",
+                            var_name,
+                            scope.string_path(path::Crate::Streams(path::Streams::Math(
+                                path::streams::Math::Product2
+                            ))),
+                            input_names[0],
+                            input_names[1],
+                        ),
+                    }
+                },
+            ),
+        )
+    }
     pub fn new_quotient_stream() -> Self {
         Self::new(
             "QuotientStream".into(),
@@ -779,16 +947,142 @@ impl Node {
                 |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
                     match target_version {
                         TargetVersion::V0_3 => format!(
-                            "let {} = make_input_getter!(QuotientStream::new({}, {}), f32, E);\n",
-                            var_name, input_names[0], input_names[1]
+                            "let {} = make_input_getter!({}::new({}, {}), f32, E);\n",
+                            var_name,
+                            scope.string_path(path::Crate::Streams(path::Streams::Math(
+                                path::streams::Math::QuotientStream
+                            ))),
+                            input_names[0],
+                            input_names[1],
                         ),
                         TargetVersion::V0_4 => format!(
-                            "let {} = make_input_getter(QuotientStream::new({}, {}));\n",
-                            var_name, input_names[0], input_names[1]
+                            "let {} = make_input_getter({}::new({}, {}));\n",
+                            var_name,
+                            scope.string_path(path::Crate::Streams(path::Streams::Math(
+                                path::streams::Math::QuotientStream
+                            ))),
+                            input_names[0],
+                            input_names[1],
                         ),
                         TargetVersion::V0_5 | TargetVersion::V0_6 => format!(
-                            "let {} = static_reference!(QuotientStream::new({}, {}));\n",
-                            var_name, input_names[0], input_names[1]
+                            "let {} = static_reference!({}::new({}, {}));\n",
+                            var_name,
+                            scope.string_path(path::Crate::Streams(path::Streams::Math(
+                                path::streams::Math::QuotientStream
+                            ))),
+                            input_names[0],
+                            input_names[1],
+                        ),
+                    }
+                },
+            ),
+        )
+    }
+    pub fn new_exponent_stream() -> Self {
+        Self::new(
+            "ExponentStream".into(),
+            2,
+            Box::new(
+                |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
+                    match target_version {
+                        TargetVersion::V0_3 => format!(
+                            "let {} = make_input_getter!({}::new({}, {}), f32, E);\n",
+                            var_name,
+                            scope.string_path(path::Crate::Streams(path::Streams::Math(
+                                path::streams::Math::ExponentStream
+                            ))),
+                            input_names[0],
+                            input_names[1],
+                        ),
+                        TargetVersion::V0_4 => format!(
+                            "let {} = make_input_getter({}::new({}, {}));\n",
+                            var_name,
+                            scope.string_path(path::Crate::Streams(path::Streams::Math(
+                                path::streams::Math::ExponentStream
+                            ))),
+                            input_names[0],
+                            input_names[1],
+                        ),
+                        TargetVersion::V0_5 | TargetVersion::V0_6 => format!(
+                            "let {} = static_reference!({}::new({}, {}));\n",
+                            var_name,
+                            scope.string_path(path::Crate::Streams(path::Streams::Math(
+                                path::streams::Math::ExponentStream
+                            ))),
+                            input_names[0],
+                            input_names[1],
+                        ),
+                    }
+                },
+            ),
+        )
+    }
+    pub fn new_derivative_stream() -> Self {
+        Self::new(
+            "DerivativeStream".into(),
+            1,
+            Box::new(
+                |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
+                    match target_version {
+                        TargetVersion::V0_3 => format!(
+                            "let {} = make_input_getter!({}::new({}), f32, E);\n",
+                            var_name,
+                            scope.string_path(path::Crate::Streams(path::Streams::Math(
+                                path::streams::Math::DerivativeStream
+                            ))),
+                            input_names[0],
+                        ),
+                        TargetVersion::V0_4 => format!(
+                            "let {} = make_input_getter({}::new({}));\n",
+                            var_name,
+                            scope.string_path(path::Crate::Streams(path::Streams::Math(
+                                path::streams::Math::DerivativeStream
+                            ))),
+                            input_names[0],
+                        ),
+                        TargetVersion::V0_5 | TargetVersion::V0_6 => format!(
+                            "let {} = static_reference!({}::new({}));\n",
+                            var_name,
+                            scope.string_path(path::Crate::Streams(path::Streams::Math(
+                                path::streams::Math::DerivativeStream
+                            ))),
+                            input_names[0],
+                        ),
+                    }
+                },
+            ),
+        )
+    }
+    pub fn new_integral_stream() -> Self {
+        Self::new(
+            "IntegralStream".into(),
+            1,
+            Box::new(
+                |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
+                    match target_version {
+                        TargetVersion::V0_3 => format!(
+                            "let {} = make_input_getter!({}::new({}), f32, E);\n",
+                            var_name,
+                            scope.string_path(path::Crate::Streams(path::Streams::Math(
+                                path::streams::Math::IntegralStream
+                            ))),
+                            input_names[0],
+                        ),
+                        TargetVersion::V0_4 => format!(
+                            "let {} = make_input_getter({}::new({}));\n",
+                            var_name,
+                            scope.string_path(path::Crate::Streams(path::Streams::Math(
+                                path::streams::Math::IntegralStream
+                            ))),
+                            input_names[0],
+                        ),
+                        TargetVersion::V0_5 | TargetVersion::V0_6 => format!(
+                            "let {} = static_reference!({}::new({}));\n",
+                            var_name,
+                            scope.string_path(path::Crate::Streams(path::Streams::Math(
+                                path::streams::Math::IntegralStream
+                            ))),
+                            input_names[0],
                         ),
                     }
                 },
