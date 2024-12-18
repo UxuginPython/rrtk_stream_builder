@@ -200,7 +200,11 @@ fn code_gen_one(
     for maybe_input in &mut node_borrow.inputs {
         match maybe_input {
             Some(input) => {
-                if input.borrow().retain.get() {
+                let input_retain = match input.try_borrow() {
+                    Ok(borrow) => borrow.retain.get(),
+                    Err(_) => return Err(NodeLoopError),
+                };
+                if input_retain {
                     output.push_str(&match code_gen_one(
                         input.clone(),
                         target_version,
