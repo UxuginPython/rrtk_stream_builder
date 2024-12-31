@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024 UxuginPython
+//This system allows for getting paths of RRTK types based on a given scope. The current version of
+//Stream Builder does not have an editor for said scope, meaning that the capabilities of the
+//system are not fully used. A scope editor is planned for a future version of Stream Builder
+//however; this system will become much more useful when it is written.
 #![allow(unused)]
 use super::*;
 fn reduce(super_path: String, name: &str, in_scope: bool) -> String {
