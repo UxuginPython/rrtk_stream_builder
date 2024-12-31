@@ -264,6 +264,8 @@ struct DragInfo {
     node: Rc<RefCell<Node>>,
     start_x: f64,
     start_y: f64,
+    current_relative_x: Rc<Cell<f64>>,
+    current_relative_y: Rc<Cell<f64>>,
 }
 fn main() -> glib::ExitCode {
     let app = Application::builder().application_id(APP_ID).build();
@@ -303,7 +305,25 @@ fn build_ui(app: &Application) {
             Err(_) => "error".into(),
         });
     };
-    drag_area.set_pre_draw_func(code_gen_process.clone());
+    let my_code_gen_process = code_gen_process.clone();
+    drag_area.set_pre_draw_func(move |_, _, _, _| my_code_gen_process());
+
+    let my_drag_info = drag_info.clone();
+    drag_area.set_post_draw_func(move |_, context, _, _| {
+        let my_drag_info_borrow = match my_drag_info.borrow().clone() {
+            Some(x) => x,
+            None => return,
+        };
+        let (start_x, start_y) = (my_drag_info_borrow.start_x, my_drag_info_borrow.start_y);
+        let (end_x, end_y) = (
+            start_x + my_drag_info_borrow.current_relative_x.get(),
+            start_y + my_drag_info_borrow.current_relative_y.get(),
+        );
+        context.set_source_rgb(0.0, 0.0, 0.0);
+        context.move_to(start_x, start_y);
+        context.line_to(end_x, end_y);
+        context.stroke().unwrap();
+    });
 
     let target_version_selector = DropDown::from_strings(&["0.3", "0.4", "0.5", "0.6"]);
     target_version_selector.set_selected(3);
@@ -336,10 +356,24 @@ fn build_ui(app: &Application) {
                     node: node.clone(),
                     start_x: x,
                     start_y: y,
+                    current_relative_x: Rc::new(Cell::new(0.0)),
+                    current_relative_y: Rc::new(Cell::new(0.0)),
                 });
                 break;
             }
         }
+    });
+
+    let my_drag_area = drag_area.clone();
+    let my_drag_info = drag_info.clone();
+    drag.connect_drag_update(move |_gesture: &GestureDrag, x: f64, y: f64| {
+        let my_drag_info_borrow = match my_drag_info.borrow_mut().clone() {
+            Some(x) => x,
+            None => return,
+        };
+        my_drag_info_borrow.current_relative_x.set(x);
+        my_drag_info_borrow.current_relative_y.set(y);
+        my_drag_area.queue_draw();
     });
 
     let my_drag_area = drag_area.clone();
