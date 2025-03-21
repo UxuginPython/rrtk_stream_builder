@@ -4,8 +4,8 @@ use cairo::{Context, Error};
 use cairodrag::*;
 use gtk4::prelude::*;
 use gtk4::{
-    cairo, glib, Application, ApplicationWindow, Button, DropDown, GestureDrag, Orientation, Paned,
-    ScrolledWindow, TextBuffer, TextView,
+    cairo, glib, Application, ApplicationWindow, Button, DropDown, FileDialog, FileFilter,
+    GestureDrag, Orientation, Paned, ScrolledWindow, TextBuffer, TextView,
 };
 use std::{
     cell::{Cell, RefCell},
@@ -326,21 +326,39 @@ fn build_ui(app: &Application) {
     });
 
     let save_button = Button::builder().label("Save").build();
+    let file_filter = FileFilter::new();
+    file_filter.add_suffix("rsb");
+    let file_dialog = FileDialog::builder()
+        //.filters(&gtk4::gio::ListModel::from([gtk4::FileFilter::new()]))
+        .default_filter(&file_filter)
+        .build();
     let my_drag_gesture_nodes = drag_gesture_nodes.clone();
     save_button.connect_clicked(move |_| {
-        let my_drag_gesture_nodes_borrow = my_drag_gesture_nodes.borrow();
-        let mut rsb_nodes: Vec<rrtk_rsb::Node> =
-            Vec::with_capacity(my_drag_gesture_nodes_borrow.len());
-        for node in my_drag_gesture_nodes_borrow.iter() {
-            rsb_nodes.push(rrtk_rsb::Node {
-                id: 0xDEAD,
-                x: node.borrow().x.get(),
-                y: node.borrow().y.get(),
-                inputs: vec![],
-            });
-        }
-        let file = rrtk_rsb::build_file(rsb_nodes.iter());
-        std::fs::write("test.rsb", file).unwrap();
+        let really_my_drag_gesture_nodes = my_drag_gesture_nodes.clone();
+        //TODO: figure out if the None<&ApplicationWindow> should be Some with the ApplicationWindow
+        file_dialog.save(
+            None::<&ApplicationWindow>,
+            None::<&gtk4::gio::Cancellable>,
+            move |result| {
+                let path = match result {
+                    Ok(good) => good.path().unwrap(),
+                    Err(bad) => return,
+                };
+                let my_drag_gesture_nodes_borrow = really_my_drag_gesture_nodes.borrow();
+                let mut rsb_nodes: Vec<rrtk_rsb::Node> =
+                    Vec::with_capacity(my_drag_gesture_nodes_borrow.len());
+                for node in my_drag_gesture_nodes_borrow.iter() {
+                    rsb_nodes.push(rrtk_rsb::Node {
+                        id: 0xDEAD,
+                        x: node.borrow().x.get(),
+                        y: node.borrow().y.get(),
+                        inputs: vec![],
+                    });
+                }
+                let file = rrtk_rsb::build_file(rsb_nodes.iter());
+                std::fs::write(path, file).unwrap();
+            },
+        );
     });
 
     let target_version_selector = DropDown::from_strings(&["0.3", "0.4", "0.5", "0.6"]);
