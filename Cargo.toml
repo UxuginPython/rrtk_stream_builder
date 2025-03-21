@@ -14,3 +14,4 @@ categories = ["science::robotics", "development-tools"]
 [dependencies]
 cairodrag = "0.2.0"
 gtk4 = "0.9.4"
+rrtk_rsb = { path = "../rrtk_rsb" }

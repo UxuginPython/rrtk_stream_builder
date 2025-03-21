@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright 2024 UxuginPython
 use super::*;
-use gtk4::{Button, Label};
+use gtk4::Label;
 pub fn make_button_box(
     push: impl Fn(Rc<RefCell<Node>>, f64, f64) -> () + Clone + 'static,
 ) -> gtk4::Box {

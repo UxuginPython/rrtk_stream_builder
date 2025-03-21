@@ -4,7 +4,7 @@ use cairo::{Context, Error};
 use cairodrag::*;
 use gtk4::prelude::*;
 use gtk4::{
-    cairo, glib, Application, ApplicationWindow, DropDown, GestureDrag, Orientation, Paned,
+    cairo, glib, Application, ApplicationWindow, Button, DropDown, GestureDrag, Orientation, Paned,
     ScrolledWindow, TextBuffer, TextView,
 };
 use std::{
@@ -325,6 +325,24 @@ fn build_ui(app: &Application) {
         context.stroke().unwrap();
     });
 
+    let save_button = Button::builder().label("Save").build();
+    let my_drag_gesture_nodes = drag_gesture_nodes.clone();
+    save_button.connect_clicked(move |_| {
+        let my_drag_gesture_nodes_borrow = my_drag_gesture_nodes.borrow();
+        let mut rsb_nodes: Vec<rrtk_rsb::Node> =
+            Vec::with_capacity(my_drag_gesture_nodes_borrow.len());
+        for node in my_drag_gesture_nodes_borrow.iter() {
+            rsb_nodes.push(rrtk_rsb::Node {
+                id: 0xDEAD,
+                x: node.borrow().x.get(),
+                y: node.borrow().y.get(),
+                inputs: vec![],
+            });
+        }
+        let file = rrtk_rsb::build_file(rsb_nodes.iter());
+        std::fs::write("test.rsb", file).unwrap();
+    });
+
     let target_version_selector = DropDown::from_strings(&["0.3", "0.4", "0.5", "0.6"]);
     target_version_selector.set_selected(3);
     let my_target_version_selector = target_version_selector.clone();
@@ -342,6 +360,7 @@ fn build_ui(app: &Application) {
     let output_box = gtk4::Box::builder()
         .orientation(Orientation::Vertical)
         .build();
+    output_box.append(&save_button);
     output_box.append(&target_version_selector);
     output_box.append(&text_view_scroll);
 
