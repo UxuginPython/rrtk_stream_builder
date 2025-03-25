@@ -342,18 +342,18 @@ fn build_ui(app: &Application) {
             move |result| {
                 let path = match result {
                     Ok(good) => good.path().unwrap(),
-                    Err(bad) => return,
+                    Err(_) => return,
                 };
                 let my_drag_gesture_nodes_borrow = really_my_drag_gesture_nodes.borrow();
                 let mut rsb_nodes: Vec<rrtk_rsb::Node> =
                     Vec::with_capacity(my_drag_gesture_nodes_borrow.len());
                 for node in my_drag_gesture_nodes_borrow.iter() {
-                    rsb_nodes.push(rrtk_rsb::Node {
-                        id: 0xDEAD,
-                        x: node.borrow().x.get(),
-                        y: node.borrow().y.get(),
-                        inputs: vec![],
-                    });
+                    rsb_nodes.push(rrtk_rsb::Node::new(
+                        rrtk_rsb::NodeType::try_from(0xDEAD),
+                        node.borrow().x.get(),
+                        node.borrow().y.get(),
+                        vec![],
+                    ));
                 }
                 let file = rrtk_rsb::build_file(rsb_nodes.iter());
                 std::fs::write(path, file).unwrap();
