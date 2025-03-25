@@ -334,6 +334,7 @@ fn build_ui(app: &Application) {
     let file_dialog = FileDialog::builder()
         .filters(&filter_list)
         .default_filter(&file_filter)
+        .initial_name("document.rsb")
         .build();
     let my_drag_gesture_nodes = drag_gesture_nodes.clone();
     save_button.connect_clicked(move |_| {
