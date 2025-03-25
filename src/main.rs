@@ -2,9 +2,10 @@
 // Copyright 2024 UxuginPython
 use cairo::{Context, Error};
 use cairodrag::*;
+use gio::ListStore;
 use gtk4::prelude::*;
 use gtk4::{
-    cairo, glib, Application, ApplicationWindow, Button, DropDown, FileDialog, FileFilter,
+    cairo, gio, glib, Application, ApplicationWindow, Button, DropDown, FileDialog, FileFilter,
     GestureDrag, Orientation, Paned, ScrolledWindow, TextBuffer, TextView,
 };
 use std::{
@@ -328,8 +329,10 @@ fn build_ui(app: &Application) {
     let save_button = Button::builder().label("Save").build();
     let file_filter = FileFilter::new();
     file_filter.add_suffix("rsb");
+    let filter_list = ListStore::new::<FileFilter>();
+    filter_list.append(&file_filter);
     let file_dialog = FileDialog::builder()
-        //.filters(&gtk4::gio::ListModel::from([gtk4::FileFilter::new()]))
+        .filters(&filter_list)
         .default_filter(&file_filter)
         .build();
     let my_drag_gesture_nodes = drag_gesture_nodes.clone();
