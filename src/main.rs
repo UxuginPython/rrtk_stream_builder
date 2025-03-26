@@ -371,13 +371,41 @@ fn build_ui(app: &Application) {
         );
     });
 
+    let my_drag_area = drag_area.clone(); //This works like Rc, I think
+    let my_drag_gesture_nodes = drag_gesture_nodes.clone();
+    let my_code_gen_process = code_gen_process.clone();
+    let push = move |node: Rc<RefCell<Node>>, x, y| {
+        my_drag_area.push_rc_ref_cell(node.clone(), x, y);
+        my_drag_gesture_nodes.borrow_mut().push(node);
+        my_code_gen_process();
+    };
+
     let open_button = Button::builder().label("Open").build();
     let my_drag_gesture_nodes = drag_gesture_nodes.clone();
+    let my_push = push.clone();
     open_button.connect_clicked(move |_| {
+        let really_my_drag_gesture_nodes = my_drag_gesture_nodes.clone();
+        let really_my_push = my_push.clone();
         file_dialog.borrow().open(
             None::<&ApplicationWindow>,
             None::<&gio::Cancellable>,
-            move |result| println!("{:?}", result),
+            move |result| {
+                let path = match result {
+                    Ok(good) => good.path().unwrap(),
+                    Err(_) => return,
+                };
+                for node in really_my_drag_gesture_nodes.borrow().iter() {
+                    node.borrow_mut().retain.set(false);
+                }
+                really_my_drag_gesture_nodes.borrow_mut().clear();
+                for rsb_node in rrtk_rsb::read_file(&std::fs::read(path).unwrap()).unwrap() {
+                    really_my_push(
+                        Rc::new(RefCell::new(Node::new_constant_getter())),
+                        rsb_node.x,
+                        rsb_node.y,
+                    );
+                }
+            },
         );
     });
 
@@ -460,13 +488,6 @@ fn build_ui(app: &Application) {
     });
 
     drag_area.add_controller(drag);
-    let my_drag_area = drag_area.clone(); //This works like Rc, I think
-    let my_drag_gesture_nodes = drag_gesture_nodes.clone();
-    let push = move |node: Rc<RefCell<Node>>, x, y| {
-        my_drag_area.push_rc_ref_cell(node.clone(), x, y);
-        my_drag_gesture_nodes.borrow_mut().push(node);
-        code_gen_process();
-    };
 
     let button_box = button_box::make_button_box(push);
     let button_box_scroll = ScrolledWindow::builder()
