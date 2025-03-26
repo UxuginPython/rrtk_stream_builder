@@ -400,7 +400,7 @@ fn build_ui(app: &Application) {
                 really_my_drag_gesture_nodes.borrow_mut().clear();
                 for rsb_node in rrtk_rsb::read_file(&std::fs::read(path).unwrap()).unwrap() {
                     really_my_push(
-                        Rc::new(RefCell::new(Node::new_constant_getter())),
+                        Rc::new(RefCell::new(Node::new_from_rsb_type(rsb_node.id.unwrap()))),
                         rsb_node.x,
                         rsb_node.y,
                     );

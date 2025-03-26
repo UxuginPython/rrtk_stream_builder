@@ -2,6 +2,7 @@
 // Copyright 2024 UxuginPython
 use super::*;
 impl Node {
+    #[allow(unused)]
     pub fn new_from_path(path: path::Crate) -> Self {
         match path {
             path::Crate::ConstantGetter => Self::new_constant_getter(),
