@@ -88,6 +88,41 @@ impl Node {
             }
         }
     }
+    pub fn new_from_rsb_type(id: rrtk_rsb::NodeType) -> Self {
+        match id {
+            rrtk_rsb::NodeType::ConstantGetter => Self::new_constant_getter(),
+            rrtk_rsb::NodeType::NoneGetter => Self::new_none_getter(),
+            rrtk_rsb::NodeType::Expirer => Self::new_expirer(),
+            rrtk_rsb::NodeType::Latest => Self::new_latest(),
+            rrtk_rsb::NodeType::CommandPID => Self::new_command_pid(),
+            rrtk_rsb::NodeType::EWMAStream => Self::new_ewma_stream(),
+            rrtk_rsb::NodeType::MovingAverageStream => Self::new_moving_average_stream(),
+            rrtk_rsb::NodeType::PIDControllerStream => Self::new_pid_controller_stream(),
+            rrtk_rsb::NodeType::PositionToState => Self::new_position_to_state(),
+            rrtk_rsb::NodeType::VelocityToState => Self::new_velocity_to_state(),
+            rrtk_rsb::NodeType::AccelerationToState => Self::new_acceleration_to_state(),
+            rrtk_rsb::NodeType::NoneToError => Self::new_none_to_error(),
+            rrtk_rsb::NodeType::NoneToValue => Self::new_none_to_value(),
+            rrtk_rsb::NodeType::FloatToQuantity => Self::new_float_to_quantity(),
+            rrtk_rsb::NodeType::QuantityToFloat => Self::new_quantity_to_float(),
+            rrtk_rsb::NodeType::FreezeStream => Self::new_freeze_stream(),
+            rrtk_rsb::NodeType::IfStream => Self::new_if_stream(),
+            rrtk_rsb::NodeType::IfElseStream => Self::new_if_else_stream(),
+            rrtk_rsb::NodeType::AndStream => Self::new_and_stream(),
+            rrtk_rsb::NodeType::OrStream => Self::new_or_stream(),
+            rrtk_rsb::NodeType::NotStream => Self::new_not_stream(),
+            rrtk_rsb::NodeType::SumStream => Self::new_sum_stream(),
+            rrtk_rsb::NodeType::Sum2 => Self::new_sum_2(),
+            rrtk_rsb::NodeType::DifferenceStream => Self::new_difference_stream(),
+            rrtk_rsb::NodeType::ProductStream => Self::new_product_stream(),
+            rrtk_rsb::NodeType::Product2 => Self::new_product_2(),
+            rrtk_rsb::NodeType::QuotientStream => Self::new_quotient_stream(),
+            rrtk_rsb::NodeType::ExponentStream => Self::new_exponent_stream(),
+            rrtk_rsb::NodeType::DerivativeStream => Self::new_derivative_stream(),
+            rrtk_rsb::NodeType::IntegralStream => Self::new_integral_stream(),
+            _ => unimplemented!(),
+        }
+    }
     pub fn new_constant_getter() -> Self {
         Self::new(
             path::Crate::ConstantGetter,
