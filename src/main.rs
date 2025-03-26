@@ -39,6 +39,7 @@ struct Node {
     x: Cell<f64>,
     y: Cell<f64>,
     var_name: Option<String>,
+    rsb_index: Option<u16>,
     // |my_var_name: String, input_var_names: Vec<String>| {line_of_code}
     generate_func: Box<dyn Fn(TargetVersion, &scope::Crate, String, Vec<String>) -> String>,
     retain: Cell<bool>,
@@ -59,6 +60,7 @@ impl Node {
             x: Cell::new(0.0),
             y: Cell::new(0.0),
             var_name: None,
+            rsb_index: None,
             generate_func: generate_func
                 as Box<dyn Fn(TargetVersion, &scope::Crate, String, Vec<String>) -> String>,
             retain: Cell::new(true),
@@ -357,13 +359,24 @@ fn build_ui(app: &Application) {
                 let my_drag_gesture_nodes_borrow = really_my_drag_gesture_nodes.borrow();
                 let mut rsb_nodes: Vec<rrtk_rsb::Node> =
                     Vec::with_capacity(my_drag_gesture_nodes_borrow.len());
-                for node in my_drag_gesture_nodes_borrow.iter() {
+                for (i, node) in my_drag_gesture_nodes_borrow.iter().enumerate() {
+                    node.borrow_mut().rsb_index = Some(i as u16);
+                    let mut inputs = Vec::with_capacity(node.borrow().inputs.len());
+                    for maybe_input in &node.borrow().inputs {
+                        inputs.push(match maybe_input {
+                            None => 65535,
+                            Some(input) => input.borrow().rsb_index.unwrap(),
+                        });
+                    }
                     rsb_nodes.push(rrtk_rsb::Node::new(
                         Ok(rrtk_rsb::NodeType::from(node.borrow().path)),
                         node.borrow().x.get(),
                         node.borrow().y.get(),
-                        vec![],
+                        inputs,
                     ));
+                }
+                for node in my_drag_gesture_nodes_borrow.iter() {
+                    node.borrow_mut().rsb_index = None;
                 }
                 let file = rrtk_rsb::build_file(rsb_nodes.iter());
                 std::fs::write(path, file).unwrap();
