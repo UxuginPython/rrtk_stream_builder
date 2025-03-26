@@ -2,6 +2,92 @@
 // Copyright 2024 UxuginPython
 use super::*;
 impl Node {
+    pub fn new_from_path(path: path::Crate) -> Self {
+        match path {
+            path::Crate::ConstantGetter => Self::new_constant_getter(),
+            path::Crate::NoneGetter => Self::new_none_getter(),
+            path::Crate::Streams(path::Streams::Expirer) => Self::new_expirer(),
+            path::Crate::Streams(path::Streams::Latest) => Self::new_latest(),
+            path::Crate::Streams(path::Streams::Control(path::streams::Control::CommandPID)) => {
+                Self::new_command_pid()
+            }
+            path::Crate::Streams(path::Streams::Control(path::streams::Control::EWMAStream)) => {
+                Self::new_ewma_stream()
+            }
+            path::Crate::Streams(path::Streams::Control(
+                path::streams::Control::MovingAverageStream,
+            )) => Self::new_moving_average_stream(),
+            path::Crate::Streams(path::Streams::Control(
+                path::streams::Control::PIDControllerStream,
+            )) => Self::new_pid_controller_stream(),
+            path::Crate::Streams(path::Streams::Converters(
+                path::streams::Converters::PositionToState,
+            )) => Self::new_position_to_state(),
+            path::Crate::Streams(path::Streams::Converters(
+                path::streams::Converters::VelocityToState,
+            )) => Self::new_velocity_to_state(),
+            path::Crate::Streams(path::Streams::Converters(
+                path::streams::Converters::AccelerationToState,
+            )) => Self::new_acceleration_to_state(),
+            path::Crate::Streams(path::Streams::Converters(
+                path::streams::Converters::NoneToError,
+            )) => Self::new_none_to_error(),
+            path::Crate::Streams(path::Streams::Converters(
+                path::streams::Converters::NoneToValue,
+            )) => Self::new_none_to_value(),
+            path::Crate::Streams(path::Streams::Converters(
+                path::streams::Converters::FloatToQuantity,
+            )) => Self::new_float_to_quantity(),
+            path::Crate::Streams(path::Streams::Converters(
+                path::streams::Converters::QuantityToFloat,
+            )) => Self::new_quantity_to_float(),
+            path::Crate::Streams(path::Streams::Flow(path::streams::Flow::FreezeStream)) => {
+                Self::new_freeze_stream()
+            }
+            path::Crate::Streams(path::Streams::Flow(path::streams::Flow::IfStream)) => {
+                Self::new_if_stream()
+            }
+            path::Crate::Streams(path::Streams::Flow(path::streams::Flow::IfElseStream)) => {
+                Self::new_if_else_stream()
+            }
+            path::Crate::Streams(path::Streams::Logic(path::streams::Logic::AndStream)) => {
+                Self::new_and_stream()
+            }
+            path::Crate::Streams(path::Streams::Logic(path::streams::Logic::OrStream)) => {
+                Self::new_or_stream()
+            }
+            path::Crate::Streams(path::Streams::Logic(path::streams::Logic::NotStream)) => {
+                Self::new_not_stream()
+            }
+            path::Crate::Streams(path::Streams::Math(path::streams::Math::SumStream)) => {
+                Self::new_sum_stream()
+            }
+            path::Crate::Streams(path::Streams::Math(path::streams::Math::Sum2)) => {
+                Self::new_sum_2()
+            }
+            path::Crate::Streams(path::Streams::Math(path::streams::Math::DifferenceStream)) => {
+                Self::new_difference_stream()
+            }
+            path::Crate::Streams(path::Streams::Math(path::streams::Math::ProductStream)) => {
+                Self::new_product_stream()
+            }
+            path::Crate::Streams(path::Streams::Math(path::streams::Math::Product2)) => {
+                Self::new_product_2()
+            }
+            path::Crate::Streams(path::Streams::Math(path::streams::Math::QuotientStream)) => {
+                Self::new_quotient_stream()
+            }
+            path::Crate::Streams(path::Streams::Math(path::streams::Math::ExponentStream)) => {
+                Self::new_exponent_stream()
+            }
+            path::Crate::Streams(path::Streams::Math(path::streams::Math::DerivativeStream)) => {
+                Self::new_derivative_stream()
+            }
+            path::Crate::Streams(path::Streams::Math(path::streams::Math::IntegralStream)) => {
+                Self::new_integral_stream()
+            }
+        }
+    }
     pub fn new_constant_getter() -> Self {
         Self::new(
             path::Crate::ConstantGetter,
