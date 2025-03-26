@@ -4,8 +4,8 @@ use cairo::{Context, Error};
 use cairodrag::*;
 use gtk4::prelude::*;
 use gtk4::{
-    cairo, glib, Application, ApplicationWindow, DropDown, GestureDrag, Orientation, Paned,
-    ScrolledWindow, TextBuffer, TextView,
+    Application, ApplicationWindow, DropDown, GestureDrag, Orientation, Paned, ScrolledWindow,
+    TextBuffer, TextView, cairo, glib,
 };
 use std::{
     cell::{Cell, RefCell},
@@ -25,11 +25,7 @@ enum TargetVersion {
     V0_6,
 }
 fn max_partial_ord<T: PartialOrd>(x: T, y: T) -> T {
-    if x >= y {
-        x
-    } else {
-        y
-    }
+    if x >= y { x } else { y }
 }
 struct Node {
     type_name: String,

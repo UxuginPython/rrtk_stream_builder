@@ -146,7 +146,10 @@ impl Node {
                 |target_version, scope: &scope::Crate, var_name, input_names: Vec<String>| {
                     match target_version {
                         TargetVersion::V0_3 => {
-                            format!("let {} = panic!(\"streams::control::CommandPID available in RRTK 0.4+\");\n", var_name)
+                            format!(
+                                "let {} = panic!(\"streams::control::CommandPID available in RRTK 0.4+\");\n",
+                                var_name
+                            )
                         }
                         TargetVersion::V0_4 => {
                             format!(
