@@ -5,8 +5,8 @@ use cairodrag::*;
 use gio::ListStore;
 use gtk4::prelude::*;
 use gtk4::{
-    cairo, gio, glib, Application, ApplicationWindow, Button, DropDown, FileDialog, FileFilter,
-    GestureDrag, Orientation, Paned, ScrolledWindow, TextBuffer, TextView,
+    Application, ApplicationWindow, Button, DropDown, FileDialog, FileFilter, GestureDrag,
+    Orientation, Paned, ScrolledWindow, TextBuffer, TextView, cairo, gio, glib,
 };
 use std::{
     cell::{Cell, RefCell},
