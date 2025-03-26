@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-// Copyright 2024 UxuginPython
+// Copyright 2024-2025 UxuginPython
 //This system allows for getting paths of RRTK types based on a given scope. The current version of
 //Stream Builder does not have an editor for said scope, meaning that the capabilities of the
 //system are not fully used. A scope editor is planned for a future version of Stream Builder
