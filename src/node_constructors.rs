@@ -227,7 +227,7 @@ impl Node {
                                 "let {} = make_input_getter!({}::new(Rc::clone(&{}), todo!()), f32, E);\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Control(
-                                    path::streams::Control::EWMAStream
+                                    path::streams::Control::MovingAverageStream
                                 ))),
                                 input_names[0],
                             )
@@ -237,7 +237,7 @@ impl Node {
                                 "let {} = make_input_getter({}::new(Rc::clone(&{}), todo!()));\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Control(
-                                    path::streams::Control::EWMAStream
+                                    path::streams::Control::MovingAverageStream
                                 ))),
                                 input_names[0],
                             )
@@ -247,7 +247,7 @@ impl Node {
                                 "let {} = static_reference!({}::new({}.clone(), todo!()));\n",
                                 var_name,
                                 scope.string_path(path::Crate::Streams(path::Streams::Control(
-                                    path::streams::Control::EWMAStream
+                                    path::streams::Control::MovingAverageStream
                                 ))),
                                 input_names[0],
                             )
