@@ -356,7 +356,7 @@ fn build_ui(app: &Application) {
                     Vec::with_capacity(my_drag_gesture_nodes_borrow.len());
                 for node in my_drag_gesture_nodes_borrow.iter() {
                     rsb_nodes.push(rrtk_rsb::Node::new(
-                        rrtk_rsb::NodeType::try_from(0xDEAD),
+                        Ok(rrtk_rsb::NodeType::from(node.borrow().path)),
                         node.borrow().x.get(),
                         node.borrow().y.get(),
                         vec![],
