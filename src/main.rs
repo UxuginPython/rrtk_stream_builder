@@ -33,6 +33,7 @@ fn max_partial_ord<T: PartialOrd>(x: T, y: T) -> T {
     }
 }
 struct Node {
+    path: path::Crate,
     type_name: String,
     inputs: Vec<Option<Rc<RefCell<Node>>>>,
     x: Cell<f64>,
@@ -44,6 +45,7 @@ struct Node {
 }
 impl Node {
     fn new(
+        path: path::Crate,
         type_name: String,
         input_count: usize,
         generate_func: Box<
@@ -51,6 +53,7 @@ impl Node {
         >,
     ) -> Self {
         Self {
+            path: path,
             type_name: type_name,
             inputs: vec![None; input_count],
             x: Cell::new(0.0),

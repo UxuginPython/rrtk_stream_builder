@@ -4,6 +4,7 @@ use super::*;
 impl Node {
     pub fn new_constant_getter() -> Self {
         Self::new(
+            path::Crate::ConstantGetter,
             "ConstantGetter".into(),
             0,
             Box::new(
@@ -36,6 +37,7 @@ impl Node {
     }
     pub fn new_none_getter() -> Self {
         Self::new(
+            path::Crate::NoneGetter,
             "NoneGetter".into(),
             0,
             Box::new(
@@ -67,6 +69,7 @@ impl Node {
     }
     pub fn new_expirer() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Expirer),
             "Expirer".into(),
             1,
             Box::new(
@@ -101,6 +104,7 @@ impl Node {
     }
     pub fn new_latest() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Latest),
             "Latest".into(),
             2,
             Box::new(
@@ -140,6 +144,7 @@ impl Node {
     }
     pub fn new_command_pid() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Control(path::streams::Control::CommandPID)),
             "CommandPID".into(),
             1,
             Box::new(
@@ -175,6 +180,7 @@ impl Node {
     }
     pub fn new_ewma_stream() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Control(path::streams::Control::EWMAStream)),
             "EWMAStream".into(),
             1,
             Box::new(
@@ -217,6 +223,9 @@ impl Node {
     }
     pub fn new_moving_average_stream() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Control(
+                path::streams::Control::MovingAverageStream,
+            )),
             "MovingAverageStream".into(),
             1,
             Box::new(
@@ -259,6 +268,9 @@ impl Node {
     }
     pub fn new_pid_controller_stream() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Control(
+                path::streams::Control::PIDControllerStream,
+            )),
             "PIDControllerStream".into(),
             1,
             Box::new(
@@ -301,6 +313,9 @@ impl Node {
     }
     pub fn new_position_to_state() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Converters(
+                path::streams::Converters::PositionToState,
+            )),
             "PositionToState".into(),
             1,
             Box::new(
@@ -337,6 +352,9 @@ impl Node {
     }
     pub fn new_velocity_to_state() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Converters(
+                path::streams::Converters::VelocityToState,
+            )),
             "VelocityToState".into(),
             1,
             Box::new(
@@ -373,6 +391,9 @@ impl Node {
     }
     pub fn new_acceleration_to_state() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Converters(
+                path::streams::Converters::AccelerationToState,
+            )),
             "AccelerationToState".into(),
             1,
             Box::new(
@@ -409,6 +430,9 @@ impl Node {
     }
     pub fn new_none_to_error() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Converters(
+                path::streams::Converters::NoneToError,
+            )),
             "NoneToError".into(),
             1,
             Box::new(
@@ -445,6 +469,9 @@ impl Node {
     }
     pub fn new_none_to_value() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Converters(
+                path::streams::Converters::NoneToValue,
+            )),
             "NoneToValue".into(),
             1,
             Box::new(
@@ -481,6 +508,9 @@ impl Node {
     }
     pub fn new_float_to_quantity() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Converters(
+                path::streams::Converters::FloatToQuantity,
+            )),
             "FloatToQuantity".into(),
             1,
             Box::new(
@@ -507,6 +537,9 @@ impl Node {
     }
     pub fn new_quantity_to_float() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Converters(
+                path::streams::Converters::QuantityToFloat,
+            )),
             "QuantityToFloat".into(),
             1,
             Box::new(
@@ -533,6 +566,7 @@ impl Node {
     }
     pub fn new_freeze_stream() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Flow(path::streams::Flow::FreezeStream)),
             "FreezeStream".into(),
             2,
             Box::new(
@@ -573,6 +607,7 @@ impl Node {
     }
     pub fn new_if_stream() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Flow(path::streams::Flow::IfStream)),
             "IfStream".into(),
             2,
             Box::new(
@@ -613,6 +648,7 @@ impl Node {
     }
     pub fn new_if_else_stream() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Flow(path::streams::Flow::IfElseStream)),
             "IfElseStream".into(),
             3,
             Box::new(
@@ -655,6 +691,7 @@ impl Node {
     }
     pub fn new_and_stream() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Logic(path::streams::Logic::AndStream)),
             "AndStream".into(),
             2,
             Box::new(
@@ -695,6 +732,7 @@ impl Node {
     }
     pub fn new_or_stream() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Logic(path::streams::Logic::OrStream)),
             "OrStream".into(),
             2,
             Box::new(
@@ -735,6 +773,7 @@ impl Node {
     }
     pub fn new_not_stream() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Logic(path::streams::Logic::NotStream)),
             "NotStream".into(),
             1,
             Box::new(
@@ -773,6 +812,7 @@ impl Node {
     }
     pub fn new_sum_stream() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Math(path::streams::Math::SumStream)),
             "SumStream".into(),
             2,
             Box::new(
@@ -812,6 +852,7 @@ impl Node {
     }
     pub fn new_sum_2() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Math(path::streams::Math::Sum2)),
             "Sum2".into(),
             2,
             Box::new(
@@ -836,6 +877,7 @@ impl Node {
     }
     pub fn new_difference_stream() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Math(path::streams::Math::DifferenceStream)),
             "DifferenceStream".into(),
             2,
             Box::new(
@@ -875,6 +917,7 @@ impl Node {
     }
     pub fn new_product_stream() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Math(path::streams::Math::ProductStream)),
             "ProductStream".into(),
             2,
             Box::new(
@@ -914,6 +957,7 @@ impl Node {
     }
     pub fn new_product_2() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Math(path::streams::Math::Product2)),
             "Product2".into(),
             2,
             Box::new(
@@ -941,6 +985,7 @@ impl Node {
     }
     pub fn new_quotient_stream() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Math(path::streams::Math::QuotientStream)),
             "QuotientStream".into(),
             2,
             Box::new(
@@ -980,6 +1025,7 @@ impl Node {
     }
     pub fn new_exponent_stream() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Math(path::streams::Math::ExponentStream)),
             "ExponentStream".into(),
             2,
             Box::new(
@@ -1019,6 +1065,7 @@ impl Node {
     }
     pub fn new_derivative_stream() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Math(path::streams::Math::DerivativeStream)),
             "DerivativeStream".into(),
             1,
             Box::new(
@@ -1055,6 +1102,7 @@ impl Node {
     }
     pub fn new_integral_stream() -> Self {
         Self::new(
+            path::Crate::Streams(path::Streams::Math(path::streams::Math::IntegralStream)),
             "IntegralStream".into(),
             1,
             Box::new(
