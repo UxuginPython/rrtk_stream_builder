@@ -26,11 +26,7 @@ enum TargetVersion {
     V0_6,
 }
 fn max_partial_ord<T: PartialOrd>(x: T, y: T) -> T {
-    if x >= y {
-        x
-    } else {
-        y
-    }
+    if x >= y { x } else { y }
 }
 struct Node {
     path: path::Crate,
