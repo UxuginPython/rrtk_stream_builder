@@ -334,16 +334,19 @@ fn build_ui(app: &Application) {
     file_filter.add_suffix("rsb");
     let filter_list = ListStore::new::<FileFilter>();
     filter_list.append(&file_filter);
-    let file_dialog = FileDialog::builder()
-        .filters(&filter_list)
-        .default_filter(&file_filter)
-        .initial_name("document.rsb")
-        .build();
+    let file_dialog = Rc::new(RefCell::new(
+        FileDialog::builder()
+            .filters(&filter_list)
+            .default_filter(&file_filter)
+            .initial_name("document.rsb")
+            .build(),
+    ));
+    let my_file_dialog = file_dialog.clone();
     let my_drag_gesture_nodes = drag_gesture_nodes.clone();
     save_button.connect_clicked(move |_| {
         let really_my_drag_gesture_nodes = my_drag_gesture_nodes.clone();
         //TODO: figure out if the None<&ApplicationWindow> should be Some with the ApplicationWindow
-        file_dialog.save(
+        my_file_dialog.borrow().save(
             None::<&ApplicationWindow>,
             None::<&gtk4::gio::Cancellable>,
             move |result| {
@@ -368,6 +371,16 @@ fn build_ui(app: &Application) {
         );
     });
 
+    let open_button = Button::builder().label("Open").build();
+    let my_drag_gesture_nodes = drag_gesture_nodes.clone();
+    open_button.connect_clicked(move |_| {
+        file_dialog.borrow().open(
+            None::<&ApplicationWindow>,
+            None::<&gio::Cancellable>,
+            move |result| println!("{:?}", result),
+        );
+    });
+
     let target_version_selector = DropDown::from_strings(&["0.3", "0.4", "0.5", "0.6"]);
     target_version_selector.set_selected(3);
     let my_target_version_selector = target_version_selector.clone();
@@ -386,6 +399,7 @@ fn build_ui(app: &Application) {
         .orientation(Orientation::Vertical)
         .build();
     output_box.append(&save_button);
+    output_box.append(&open_button);
     output_box.append(&target_version_selector);
     output_box.append(&text_view_scroll);
 
